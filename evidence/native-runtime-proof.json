@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-11T07:40:06.269Z",
+  "verifiedAt": "2026-10-11T08:45:30.961Z",
   "engine": "actual Copilot dynamic-workflow runtime",
   "sdkRuntime": {
     "version": "1.0.95",
@@ -28,7 +28,7 @@
   "pausedStatus": "paused",
   "resumedStatus": "completed",
   "reportStatus": "approved",
-  "runId": "5f181cc7-a86b-46e1-b8cf-c903f3e01c52",
+  "runId": "6a0d71f9-882e-47a9-a1ec-9e236d760785",
   "workflowOwnedAgents": 0,
   "verificationRounds": 2,
   "verifiedCounts": {
@@ -40,9 +40,9 @@
   },
   "paidLiveModelPath": "Not invoked by this no-model proof.",
   "costMeter": {
-    "runId": "5f181cc7-a86b-46e1-b8cf-c903f3e01c52",
+    "runId": "6a0d71f9-882e-47a9-a1ec-9e236d760785",
     "mode": "rehearsal",
-    "measuredAt": "2026-10-11T07:40:06.259Z",
+    "measuredAt": "2026-10-11T08:45:30.950Z",
     "run": {
       "aiCredits": 0,
       "subagents": 0,

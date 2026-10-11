@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-11T07:42:50.713Z",
+  "verifiedAt": "2026-10-11T08:45:54.049Z",
   "mode": "rehearsal",
   "nativeBuild": {
     "algorithm": "sha256",
@@ -26,12 +26,15 @@
   },
   "browserArtifact": {
     "file": "Launch-Rescue-Demo.html",
-    "sha256": "56ac921a1e78b36fbe7267a1e383ade1b92c7040876bdaabf8b91d6c7b2faaaf"
+    "sha256": "dcaebc2230192da1e6b1474228033035a5d69943ece07375c8c9c69f4bc7c0fd"
   },
   "realBrowser": "Microsoft Edge",
+  "browserVersion": "155.0.4283.45",
+  "platform": "win32",
+  "architecture": "x64",
   "viewport": "1920x1080",
   "scenario": "mixed",
-  "runId": "9f1eff28-d8e1-4eac-a7b3-93b25d22d7aa",
+  "runId": "552f6e81-f6f9-4790-b64c-b0c490821e53",
   "checkpointStatus": "paused",
   "finalStatus": "completed",
   "browserExportedCurrentRun": true,
@@ -108,13 +111,13 @@
   },
   "note": "Synthetic local draft; no deployment, purchase, or remote write.",
   "costMeter": {
-    "runId": "9f1eff28-d8e1-4eac-a7b3-93b25d22d7aa",
+    "runId": "552f6e81-f6f9-4790-b64c-b0c490821e53",
     "mode": "rehearsal",
-    "measuredAt": "2026-10-11T07:42:48.659Z",
+    "measuredAt": "2026-10-11T08:45:53.034Z",
     "run": {
       "aiCredits": 0,
       "subagents": 0,
-      "activeSeconds": 8.5
+      "activeSeconds": 8.1
     },
     "totals": {
       "requests": 0,

@@ -24,12 +24,12 @@
 
 ### Try the interactive demo
 
-[Download the stage kit](https://github.com/msftnadavbh/workflows/raw/refs/heads/main/Launch-Rescue-Stage-Kit.zip), extract it, and open **`Launch-Rescue-Demo.html`** in a modern browser. Everything it needs is in that file: no installation, sign-in, or network connection.
+[Download the portable-support stage kit](https://github.com/msftnadavbh/workflows/raw/refs/heads/macos-validation-f2d6f37a7bd9/Launch-Rescue-Stage-Kit.zip), extract it, and open **`Launch-Rescue-Demo.html`** in a modern browser. Everything it needs is in that file: no installation, sign-in, or network connection.
 
 Or clone the repository:
 
 ```powershell
-git clone https://github.com/msftnadavbh/workflows.git
+git clone --branch macos-validation-f2d6f37a7bd9 https://github.com/msftnadavbh/workflows.git
 Set-Location workflows
 ```
 
@@ -85,7 +85,7 @@ On Intel, replace `arm64` with `x64`. These checks identify the actual Node arch
 
 Native rehearsal/live runs still require an authenticated, preview-eligible Copilot account. Keep the owning SDK terminal open, use **NEXT** at teaching checkpoints, and **APPROVE** only at the separate final gate. HOLD, EOF, and interruption never approve. The browser is read-only.
 
-**Verification status:** [Platform CI passed on Windows x64, macOS 15 arm64, and macOS 15 Intel x64](https://github.com/msftnadavbh/workflows/actions/runs/38124906304). Each actual runner passed build/typecheck, 73 Node tests, 4 packaging tests, 31 browser tests, presentation generation/verification, proof-gated packaging, and pinned native runtime startup without creating a session or model call. A [separate no-model native attempt](https://github.com/msftnadavbh/workflows/actions/runs/38125106961) failed explicitly on all three hosted targets with **“Agent workflows are not available for this session”** because credentials and eligible workflow access were not supplied. Authenticated Mac checkpoint/resume and live runs remain unverified. Existing native workflow proofs are Windows observations, not Mac workflow certification.
+**Verification status:** [Platform CI passed on Windows x64, macOS 15 arm64, and macOS 15 Intel x64](https://github.com/msftnadavbh/workflows/actions/runs/38125524207). Each actual runner passed build/typecheck, 73 Node tests, 4 packaging tests, 32 browser tests, presentation generation/verification, proof-gated packaging, and pinned native runtime startup without creating a session or model call. A [separate no-model native attempt](https://github.com/msftnadavbh/workflows/actions/runs/38125106961) failed explicitly on all three hosted targets with **“Agent workflows are not available for this session”** because credentials and eligible workflow access were not supplied. Authenticated Mac checkpoint/resume and live runs remain unverified. Existing native workflow proofs are Windows observations, not Mac workflow certification. See the machine-readable [platform receipt](./evidence/platform-verification.json).
 
 ### See what each run cost
 
@@ -203,7 +203,7 @@ Designed for a **2,500-person audience**, with an approximately 25-minute talk a
 |---|---|
 | [PowerPoint](./Launch-Rescue.pptx) | 21 main-story slides, 5 hidden reference slides, speaker notes, timings, and citations. |
 | [PDF backup](./Launch-Rescue.pdf) | The 21-page main story for presenting without PowerPoint. |
-| [Portable stage kit](https://github.com/msftnadavbh/workflows/raw/refs/heads/main/Launch-Rescue-Stage-Kit.zip) | Presentation, standalone HTML, native extension, sources, evidence, and runbook. |
+| [Portable stage kit](https://github.com/msftnadavbh/workflows/raw/refs/heads/macos-validation-f2d6f37a7bd9/Launch-Rescue-Stage-Kit.zip) | Presentation, standalone HTML, native extension, sources, evidence, and runbook. |
 | [Presenter runbook](./Presenter-Runbook.md) | Audience vote, exact expected counts, live cues, approval boundaries, and recovery paths. |
 | [Feature investigation](./Feature-Research.md) | Verified feature distinctions, preview caveats, and lessons discovered during actual live runs. |
 | [Primary-source inventory](./sources/research.json) | 20 official GitHub, SDK, and VS Code sources supporting the presentation. |
@@ -267,7 +267,7 @@ node scripts/run-python.mjs scripts/render-slides.py Launch-Rescue.pptx
 
 Actual execution evidence is included in [`evidence/native-live-proof.json`](./evidence/native-live-proof.json), [`evidence/native-runtime-proof.json`](./evidence/native-runtime-proof.json), and [`evidence/browser-native-live-e2e.json`](./evidence/browser-native-live-e2e.json). Proofs identify the tested build with SHA-256 fingerprints; packaging rejects stale proofs and excludes private session caches.
 
-Browser tests write screenshots into their test-output directory by default. Set `LAUNCH_RESCUE_CAPTURE_ARTIFACTS=1` only for the coordinated final screenshot capture. When multiple sessions are working, designate one owner for presentation generation, native proofs, screenshots, and the stage ZIP; do not run paid live verification without separate approval. The presentation-source command update and final artifact refresh remain with that coordinated owner.
+Browser tests write screenshots into their test-output directory by default. Set `LAUNCH_RESCUE_CAPTURE_ARTIFACTS=1` only for the coordinated final screenshot capture. This portable-support kit was rebuilt once in an isolated branch; it does not overwrite the other session's shared worktree artifacts. Native live fingerprints remain unchanged. The historical live-browser receipt retains its original HTML hash; the refreshed no-model Windows browser receipt binds the rebuilt HTML. No paid live verification was performed. Integration into `main` remains separate from this isolated delivery.
 
 ## Safety and limitations
 

@@ -1,0 +1,66 @@
+{
+  "implementationSource": "d817a2abc0448540a826eb3adb41d53d9d06a5a2",
+  "ciRun": {
+    "id": 38125524207,
+    "url": "https://github.com/msftnadavbh/workflows/actions/runs/38125524207",
+    "conclusion": "success"
+  },
+  "sdkVersion": "1.0.19",
+  "runtimeVersion": "1.0.95",
+  "platforms": [
+    {
+      "platform": "win32",
+      "architecture": "x64",
+      "browser": "Microsoft Edge",
+      "browserVersion": "153.0.4234.48",
+      "nodeTests": 73,
+      "packagingTests": 4,
+      "browserTests": 32,
+      "powerShellLauncherRegression": "passed"
+    },
+    {
+      "platform": "darwin",
+      "architecture": "arm64",
+      "browser": "Playwright Chromium",
+      "browserVersion": "141.0.7390.37",
+      "nodeTests": 73,
+      "packagingTests": 4,
+      "browserTests": 32
+    },
+    {
+      "platform": "darwin",
+      "architecture": "x64",
+      "browser": "Playwright Chromium",
+      "browserVersion": "141.0.7390.37",
+      "nodeTests": 73,
+      "packagingTests": 4,
+      "browserTests": 32
+    }
+  ],
+  "verifiedOnAllPlatforms": [
+    "build and typecheck",
+    "standalone file-based demo",
+    "owned-child local launcher and observer",
+    "browser scenario and read-only native-observer states",
+    "presentation generation and structural verification",
+    "proof-gated stage packaging",
+    "matching SDK binary startup without session or model creation"
+  ],
+  "hostedNativeAttempt": {
+    "runId": 38125106961,
+    "url": "https://github.com/msftnadavbh/workflows/actions/runs/38125106961",
+    "status": "blocked",
+    "reason": "Agent workflows are not available for this session",
+    "credentialsSupplied": false,
+    "modelCallsMade": false,
+    "macCheckpointResumeVerified": false,
+    "macLiveRunVerified": false
+  },
+  "notes": [
+    "Mac native checkpoint/resume and live runs still require authenticated preview-eligible hardware.",
+    "No AI-credit-consuming verification was authorized or performed for this portability change.",
+    "Native live evidence retains its actual unchanged native-source fingerprint.",
+    "The historical live-browser receipt keeps its original HTML hash and does not verify the rebuilt HTML.",
+    "The refreshed Windows no-model browser receipt verifies the rebuilt HTML without model calls."
+  ]
+}

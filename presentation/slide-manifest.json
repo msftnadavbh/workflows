@@ -3200,7 +3200,7 @@
         "x": 7.02,
         "y": 2.64,
         "w": 5.28,
-        "h": 1.513782383419689,
+        "h": 1.5568028419182949,
         "label": "Actual native model and call excerpt"
       },
       {
@@ -3419,7 +3419,7 @@
         "y": 2.76,
         "w": 11.23,
         "h": 0.57,
-        "label": "node .\\native\\Run-Sdk.mjs --live --pause --walkthrough"
+        "label": "npm run native -- --live --pause --walkthrough"
       },
       {
         "kind": "text",

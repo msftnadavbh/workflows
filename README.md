@@ -1,118 +1,214 @@
-# Launch Rescue
+<div align="center">
+  <h1>Launch Rescue</h1>
+  <p><strong>Give agents a goal. Give workflows a contract.</strong></p>
+  <p>An interactive GitHub Copilot demo where evidence changes the plan,<br>
+  specialists challenge the result, and a human decides what happens next.</p>
+  <p>
+    <a href="#quickstart">Quickstart</a> &middot;
+    <a href="#where-the-workflow-features-are-used">How it works</a> &middot;
+    <a href="#presenter-kit">Presentation</a> &middot;
+    <a href="./Feature-Research.md">Research</a>
+  </p>
+</div>
 
-**A stage-ready GitHub Copilot demo and 26-slide presentation for a 2,500-person audience.**
+<p align="center">
+  <img src="./presentation/assets/native-live-checkpoint.png" alt="Actual native Copilot run: a failed capacity check adds a specialist, the revised plan passes, and the workflow pauses for human review." width="100%">
+</p>
 
-The audience chooses a synthetic ticket-launch failure. Real checks decide which specialists join. In the surprise scenario, room inventory changes after the first plan; a failed check adds a new specialist. An independent review and a human checkpoint gate the local draft.
+<p align="center"><em>Actual native-mode checkpoint. Synthetic data, real Copilot agents, no deployment.</em></p>
 
-## Get the demo
+> [!NOTE]
+> This is a community demonstration, not an official GitHub product. Copilot **dynamic workflows are public preview**. The offline experience needs no account; native execution requires eligible Copilot authentication and preview access.
+
+## Quickstart
+
+### Try the offline demo
+
+[Download the stage kit](https://github.com/msftnadavbh/workflows/raw/refs/heads/main/Launch-Rescue-Stage-Kit.zip), extract it, and open **`Launch-Rescue-Demo.html`** in a modern browser. Everything it needs is in that file: no installation, sign-in, or network connection.
+
+Or clone the repository:
 
 ```powershell
 git clone https://github.com/msftnadavbh/workflows.git
 Set-Location workflows
 ```
 
-The presentation, standalone demo, and portable stage kit are included in the repository. Open `Launch-Rescue-Demo.html` directly for the offline experience. Native execution, rebuilding, and tests require the dependencies described below.
+Choose **Surprise me**, click **Run rescue**, and follow the graph. Select a check to inspect its measured result. At the checkpoint, approve the synthetic draft or keep it on hold.
 
-## Open the demo
+**Used here:** JavaScript workers and deterministic checks. **No Copilot dynamic-workflow runtime or LLM calls execute in the standalone offline mode.**
 
-Open **`Launch-Rescue-Demo.html`** in Edge, Chrome, or another modern browser. Everything needed for **offline rehearsal** is inside that file. No installation, sign-in, server, or model calls are required.
+### Run the native Copilot workflow
 
-For the local native-run observer:
+Requires **Node.js 22.12+**, a signed-in eligible Copilot account, dynamic-workflow preview access, and access to the configured models.
 
-```powershell
-node demo\server.mjs
-```
-
-Open **http://127.0.0.1:4173/?scoutTheme=dark**. The server is read-only and bound to the loopback interface.
-
-On Windows, `.\Launch-Demo.ps1` starts the server, verifies that the health response belongs to its own child process, then opens the browser. It preserves your working directory and prior `DEMO_PORT` value. `-NoBrowser` skips opening a tab. If the port is occupied, use `.\Launch-Demo.ps1 -Port 4180`. Do not change system script policies just for this demo; the direct Node command works without the PowerShell launcher.
-
-## Run real Copilot agents
-
-Requires Node.js **22.12+**, eligible Copilot authentication, dynamic-workflow preview access, and the requested models. Live runs consume AI credits.
+In the repository folder, start the observer:
 
 ```powershell
 npm ci
-node native\Run-Sdk.mjs --live --pause
+node demo\server.mjs
 ```
 
-Select **Native Copilot** in the browser. The SDK runner uses its version-matched runtime, explicit no-tool agent profiles, and the actual Copilot dynamic-workflow API.
-
-At the checkpoint, review the evidence and type **`APPROVE` in the running SDK terminal**. Commands are case-insensitive; blank lines and typos re-prompt without losing the run. Only **`HOLD`** deliberately closes the host without approval. EOF or interruption also ends the checkpoint without approving it. Start a new run after the host closes. The browser cannot resume native work, and nothing is deployed.
-
-To choose another incident:
+Open **http://127.0.0.1:4173/?scoutTheme=dark** and select **Native Copilot**. In a second terminal, from the same folder:
 
 ```powershell
-node native\Run-Sdk.mjs --live --pause --scenario parallel
+node native\Run-Sdk.mjs --live --pause --scenario mixed
 ```
 
-Scenarios: `retries`, `capacity`, `parallel`, and `mixed`. The default is `mixed`.
+**Used here:** the actual **Copilot dynamic-workflow runtime** plus **agentic model reasoning**. The browser observes execution; it does not start the agents or authorize native work.
 
-For a native runtime run **without** model calls:
+> [!IMPORTANT]
+> Native live runs consume **AI credits**. At the checkpoint, review the evidence and type **`APPROVE` in the running SDK terminal**. Type **`HOLD`** to close the host without approval. Commands are case-insensitive; blank lines and typos ask again. After the host closes, start a new run rather than trying to approve in the browser.
 
-```powershell
-node native\Run-Sdk.mjs --rehearsal --pause
-```
+To exercise the actual workflow runtime **without model calls**, replace `--live` with `--rehearsal`. Omit `--pause` for a draft-only run; no human approval is then requested or claimed.
 
-Omit `--pause` for a draft-only programmatic run. That does not claim human approval.
+## The moment to watch
 
-## Three modes, clearly labeled
+The ticket launch represents **2,500 synthetic attendees**. Every fifth attendee retries. The first repair removes duplicate outcomes.
 
-| Mode | What actually executes |
+Then the room changes.
+
+The main hall loses **200 seats after the first plan is built**. An acceptance check fails. The workflow reads the new inventory, adds the missing capacity specialist, and checks the revised candidate. It does not restart every step or wait for a new prompt.
+
+The final reduced-capacity result is **2,300 confirmations + 200 waitlisted**, with **zero duplicate outcomes, oversold seats, or missing attendees**.
+
+These are executable fixture results, not production capacity, latency, or cost benchmarks.
+
+| Choose in the browser | Native `--scenario` | What the run demonstrates |
+|---|---|---|
+| **Retry storm** | `retries` | Retry evidence adds the identity specialist; unrelated capacity work is skipped. |
+| **Room switch** | `capacity` | Stale inventory adds the capacity specialist; excess attendees are waitlisted. |
+| **Both at once** | `parallel` | Two known, independent findings launch two specialists in parallel. |
+| **Surprise me** | `mixed` | New evidence arrives after planning; a failed check adds a branch and a second verification. |
+
+## Where the workflow features are used
+
+The process is deliberately split into **orchestration**, **judgment**, **verification**, and **human review**. Not every step needs a model.
+
+| Part of the demo | Feature actually used | How it helps | Implementation |
+|---|---|---|---|
+| Register and run the process | **Dynamic workflow:** `defineWorkflow`, `joinSession` | A named, reusable process replaces a one-off sequence of chat instructions. | [Native extension](./native/extension.ts) |
+| Collect request and inventory evidence | **Dynamic workflow + deterministic code:** `ctx.parallel` | Independent probes overlap, then hand measured evidence to the next stage. No model is needed to count requests. | [Evidence collection](./demo/core.ts) |
+| Choose which specialist joins | **Dynamic workflow:** code-defined conditions | Retry and inventory findings select only the necessary branches instead of launching every agent. | [Branch selection](./demo/core.ts) |
+| Explain a bounded repair | **Agentic work:** `ctx.agent` with scoped evidence and structured output | A specialist interprets the supplied evidence and explains a permitted repair. It cannot turn its answer into arbitrary executable code. | [Analyst profile](./.github/agents/launch-analyst.agent.md) |
+| React to the room change | **Dynamic workflow:** failed-check branch | The process retains the working retry repair and adds only the capacity work required by the new facts. | [Adaptive flow](./demo/core.ts) |
+| Decide whether the repair worked | **Deterministic code:** allocation and contract checks | Measured outcomes, not model confidence, establish uniqueness, capacity, and coverage. | [Allocator and checks](./demo/core.ts) |
+| Independently challenge the explanation | **Agentic work:** a separate reviewer model | Another model checks the candidate against current evidence and each earlier repair's immutable observation snapshot. Rejection holds the candidate. | [Reviewer profile](./.github/agents/launch-reviewer.agent.md) |
+| Reuse completed work on resume | **Dynamic workflow:** versioned `ctx.step` journals | Saved JSON results can be reused when the same run resumes, avoiding repeated completed agent work. Unsaved work may run again. | [Journaled steps](./demo/core.ts) |
+| Stop at the decision boundary | **Dynamic workflow + human:** `ctx.pause` | The workflow can be correct without being authorized to continue. Review happens before the local draft is approved. | [Terminal checkpoint](./native/Run-Sdk.mjs) |
+| Explain execution to the audience | **Observer UI**, not an agent | The graph shows actual events, why a branch appeared, and what must happen next. Check inspection exposes the numbers behind a failure. | [Browser UI](./demo/browser.ts) |
+
+**What makes it dynamic?** The author defines the rules in code, but inputs and findings change the path through those rules. A model does **not** invent or rewrite the orchestration program during this demo.
+
+**What makes it agentic?** In native live mode, actual Copilot agents interpret evidence and independently challenge the result. The offline fallback substitutes ordinary JavaScript workers and says so explicitly.
+
+### Dynamic workflows are not GitHub Agentic Workflows
+
+| Capability | Used in this repository? | Role |
+|---|---|---|
+| **Copilot dynamic workflows** | **Yes, in both native modes.** | Local code-defined orchestration in the Copilot CLI/app/SDK ecosystem. |
+| **Agentic work / model reasoning** | **Yes, in native live mode.** | Workflow-owned specialists and an independent reviewer. |
+| **GitHub Agentic Workflows (`gh-aw`)** | **Research and presentation only; not executed.** | A separate tool that compiles Markdown with YAML frontmatter into GitHub Actions workflows. |
+| **`/fleet`** | **Not used by this demo.** | Copilot chooses how to decompose a goal into subagent tasks; this demo's process is defined in code. |
+| **Autopilot** | **Not required to run the demo.** | Controls agent autonomy, not the workflow's stages, permissions, or correctness. |
+
+For repository-level triage, CI investigation, or other recurring reasoning on Actions, see [GitHub Agentic Workflows](https://github.github.com/gh-aw/). Keep deterministic builds and tests deterministic. This repository does not install, run, or deploy an Actions-based agentic workflow.
+
+## Choose the right execution mode
+
+| Mode | Dynamic-workflow runtime? | Model calls? | Best for |
+|---|---|---|---|
+| **Offline rehearsal** | **No.** Local JavaScript runner. | **No.** | A dependable presentation without sign-in or Wi-Fi. |
+| **Native rehearsal** | **Yes.** Actual Copilot runtime. | **No.** | Checking registration, journals, checkpoints, and resume before a live session. |
+| **Native live** | **Yes.** Actual Copilot runtime. | **Yes.** | Showing real agent reasoning and independent review, subject to availability and AI-credit usage. |
+
+The native observer labels completed runs as completed. A previous result is not presented as a currently running model performance.
+
+### The native agent team
+
+| Role | Model | Reasoning | Boundary |
+|---|---|---|---|
+| Evidence analysis and bounded repair | **GPT-6.1 Sol** | **max** | Supplied evidence only; `tools: []`. |
+| Independent challenge | **Claude Sonnet 5.5** | **high** | Supplied candidate and checks only; `tools: []`. |
+
+The extension checks the **actual requested and resolved model** before accepting a result. An unavailable model, missing result, malformed explanation, or reviewer rejection holds the run; no silent Auto fallback is allowed.
+
+The pinned SDK is **1.0.19**, with runtime **1.0.95**. Use the version-matched SDK runner for the checkpoint demonstration. Do not assume that independently installed CLI and SDK versions share session-storage formats.
+
+## Presenter kit
+
+Designed for a **2,500-person audience**, with an approximately 25-minute talk and a 6-8-minute demo segment.
+
+| Resource | What you get |
 |---|---|
-| Offline rehearsal | Local JavaScript workers, real allocation logic, real contract checks. No LLM. |
-| Native rehearsal | Actual Copilot workflow runtime, journaled steps and checkpoints, JavaScript workers. No LLM. |
-| Native live | Actual workflow-owned agents: GPT-6.1 Sol / max, then Sonnet 5.5 / high for independent challenge. |
+| [PowerPoint](./Launch-Rescue.pptx) | 21 main-story slides, 5 hidden reference slides, speaker notes, timings, and citations. |
+| [PDF backup](./Launch-Rescue.pdf) | The 21-page main story for presenting without PowerPoint. |
+| [Portable stage kit](https://github.com/msftnadavbh/workflows/raw/refs/heads/main/Launch-Rescue-Stage-Kit.zip) | Presentation, standalone HTML, native extension, sources, evidence, and runbook. |
+| [Presenter runbook](./Presenter-Runbook.md) | Audience vote, exact expected counts, live cues, approval boundaries, and recovery paths. |
+| [Feature investigation](./Feature-Research.md) | Verified feature distinctions, preview caveats, and lessons discovered during actual live runs. |
+| [Primary-source inventory](./sources/research.json) | 20 official GitHub, SDK, and VS Code sources supporting the presentation. |
 
-The native observer explicitly labels completed and stopped runs. A completed draft-only run never invites approval, and an SDK host that has exited is no longer shown as actionable. Polls do not overlap or apply older snapshots. A completed result is not presented as a currently running model performance.
+Use **Stage view at 1920x1080**. The sentence above the graph explains what changed; selecting a check shows its measured pass/fail results. **Show run command** restores native setup even if an earlier run is displayed. Smaller screens remain operable by scrolling.
 
-Use **Stage view at 1920×1080** for the large-room demo. The sentence above the graph explains what changed; selecting a check shows its measured pass/fail results. **Show run command** opens the native instructions even when an earlier completed run is displayed. Smaller displays remain operable by scrolling.
+The Windows launcher, `.\Launch-Demo.ps1`, opens the browser only after verifying its own server is ready. Use `-Port 4180` if the default port is occupied, or `-NoBrowser` to start just the local observer.
 
-## Included
+## Explore the implementation
 
-| File | Purpose |
+| Path | Responsibility |
 |---|---|
-| `Launch-Rescue.pptx` | 21-slide main story plus 5 hidden reference slides; speaker notes, timings, and citations. |
-| `Launch-Rescue.pdf` | 21-page main-story backup; reference slides remain in the PowerPoint. |
-| `Presenter-Runbook.md` | Audience interaction, live cues, exact counts, launch sequence, and recovery plan. |
-| `Feature-Research.md` | Heavily investigated feature boundaries and engineering caveats. |
-| `sources\research.json` | 20 primary-source citations. |
-| `evidence\native-live-proof.json` | Actual model resolution, changed-input checks, checkpoint, and same-run resume with no extra agents. |
-| `.github\extensions\launch-rescue\extension.mjs` | Compiled native Copilot extension. |
+| [`demo/core.ts`](./demo/core.ts) | Shared scenario logic, evidence routing, bounded repairs, immutable snapshots, and checks. |
+| [`native/extension.ts`](./native/extension.ts) | Registers the actual Copilot dynamic workflow and verifies model resolution. |
+| [`native/Run-Sdk.mjs`](./native/Run-Sdk.mjs) | Hosts the pinned runtime, loads scoped agents, and owns the terminal checkpoint. |
+| [`demo/browser.ts`](./demo/browser.ts) | Runs offline rehearsal and observes native progress without authorizing it. |
+| [`native/reconcile.ts`](./native/reconcile.ts) | Combines progress and lifecycle records without letting stale writes undo HOLD or resumed work. |
+| [`tests`](./tests) | Regression coverage for calculations, branches, recovery, polling, packaging, and launchers. |
+| [`.github/github-app.yml`](./.github/github-app.yml) | Copilot app project instructions and manual demo/test scripts; not a scheduled workflow. |
 
-The Windows CLI launcher is also available:
+The compiled extension is included at [`.github/extensions/launch-rescue/extension.mjs`](./.github/extensions/launch-rescue/extension.mjs). The Windows CLI alternative is documented in the [runbook](./Presenter-Runbook.md); prefer the SDK path for the live checkpoint.
+
+## Development and verification
+
+Install dependencies with `npm ci`. Local regression tests also require **Python**; browser tests use an installed **Microsoft Edge**.
+
+| Command | Coverage | Makes model calls? |
+|---|---|---|
+| `npm run build` | Rebuilds the standalone HTML and native extension. | No |
+| `npm run typecheck` | Strict TypeScript checks against the actual SDK types. | No |
+| `npm test` | Calculations, routing, recovery, lifecycle races, terminal input, server, and package regressions. | No |
+| `npm run test:browser` | Scenario completion, normal-speed narration, keyboard use, reload, native observer states, and stage fit. | No |
+| `npm run verify:native` | Actual native-runtime checkpoint and same-run resume. Requires eligible authentication. | No |
+| `npm run verify:live` | Actual configured models, independent review, and reuse of completed agent work. | **Yes** |
+| `npm run test:native-e2e` | Real agents through an actual browser observer, evidence download, terminal approval, and resume. | **Yes** |
+| `npm run verify:deck` | PowerPoint structure, references, notes, and bounds. | No |
+| `npm run package:stage` | Packages the kit only when native proof hashes match the current build. | No |
+
+For browser-observed native E2E without model calls:
 
 ```powershell
-.\native\Run-Native.ps1 -Mode Rehearsal
+node scripts\rehearse-native.mjs
 ```
 
-Prefer the SDK runner for the stage checkpoint demonstration. The installed CLI wrapper, active CLI, and SDK can select different runtimes and session-storage representations. Do not mix them when resuming. A run created directly in a local app/CLI session belongs to that session's **Workflows** view.
-
-## Rebuild
-
-```powershell
-npm run build
-npm run typecheck
-npm test
-npm run test:browser
-npm run deck
-```
-
-Browser checks use installed Microsoft Edge. Rendering slides uses installed PowerPoint plus Python's `pythoncom`, `win32com`, and Pillow; it is optional for using the delivered files:
+To rebuild the presentation, run `npm run deck`. Optional slide rendering uses installed PowerPoint, `pythoncom`, `win32com`, and Pillow:
 
 ```powershell
 python scripts\render-slides.py Launch-Rescue.pptx
-npm run verify:deck
 ```
 
-`npm run verify:native` checks the actual runtime without model calls. **`npm run verify:live` makes actual model calls** and consumes credits. Both proofs record SHA-256 fingerprints of the tested native sources and compiled outputs. `npm run package:stage` refuses stale proofs and excludes private session caches.
+Actual execution evidence is included in [`evidence/native-live-proof.json`](./evidence/native-live-proof.json), [`evidence/native-runtime-proof.json`](./evidence/native-runtime-proof.json), and [`evidence/browser-native-live-e2e.json`](./evidence/browser-native-live-e2e.json). Proofs identify the tested build with SHA-256 fingerprints; packaging rejects stale proofs and excludes private session caches.
 
-**`npm run test:native-e2e`** rehearses real model execution through an actual Edge browser observer: failed-check inspection, evidence download, terminal approval, and same-run resume. It consumes AI credits. For the same end-to-end browser rehearsal without model calls, run `node scripts\rehearse-native.mjs`.
+## Safety and limitations
 
-Lifecycle observations are kept separately from `runs\RUN_ID\state.json`, which is written only by the extension. Per-attempt outcome records and an irreversible host-close marker are merged by the read-only observer, so concurrent reconciliation cannot overwrite progress or undo HOLD.
+- **Synthetic, local-only task.** No real tickets, purchases, messages, deployments, or remote repository changes are performed by the demo.
+- **Bounded agent output.** Agents propose permitted repair choices; the workflow never executes generated code. Separate semantic validation supplements the SDK's structural output checks.
+- **Explicit approval.** Native checkpoints resume only in their owning host. The browser is a read-only observer; the standalone browser approval applies only to the offline draft.
+- **Review extension code before trusting it.** `tools: []` restricts the agent, not arbitrary JavaScript in an extension. The local server exposes no execution or write endpoints.
+- **Availability is not guaranteed.** Public-preview APIs, plan eligibility, organization policy, authentication, and model access can change. AI-credit limits are approximate, not a hard cost ceiling.
 
-## Boundaries
+For a quick answer or a small change, a normal Copilot prompt may be enough. Use a dynamic workflow when the **process itself** needs repeatable stages, evidence-driven branches, durable results, or a clear human decision boundary.
 
-All people, ticket requests, rooms, and operational data are synthetic. Models return bounded choices, not executable code. The local server exposes no execution or write endpoints. No deployment, purchases, messages, real tickets, or remote repository changes occur.
+## Documentation and feedback
 
-`tools: []` constrains agents; it does not sandbox arbitrary extension code. Review the extension before trusting it. Dynamic workflows are public preview and client, plan, policy, API, and model availability may change.
+[Dynamic workflow concepts](https://docs.github.com/en/copilot/concepts/agents/dynamic-workflows) &middot;
+[Create, run, and resume workflows](https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-dynamic-workflows) &middot;
+[SDK workflow API](https://github.com/github/copilot-sdk/blob/v1.0.19/nodejs/docs/workflows.md)
+
+Found a problem? [Open an issue](https://github.com/msftnadavbh/workflows/issues) with the scenario, execution mode, operating system, Node/runtime versions, expected result, and sanitized error. Do not attach tokens, credentials, or unrelated session logs.

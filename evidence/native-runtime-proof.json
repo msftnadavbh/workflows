@@ -1,0 +1,41 @@
+{
+  "verifiedAt": "2026-10-11T05:03:50.243Z",
+  "engine": "actual Copilot dynamic-workflow runtime",
+  "sdkRuntime": {
+    "version": "1.0.95",
+    "protocolVersion": 3
+  },
+  "mode": "rehearsal",
+  "nativeBuild": {
+    "algorithm": "sha256",
+    "files": {
+      "demo\\core.ts": "e5298283be7ef23da79ac0a3bde58b039e3626866a5de637f3d1aa1fb362f0e1",
+      "native\\extension.ts": "297c69613a6e8b0a22b0ba7b04cce135b5df680b5663edd1d0f1f529a4d95205",
+      "native\\io.ts": "6b6c8828c76d053331f24e298a23d0a7abc86bbcfc7c1f47f95ddb5a56d04bef",
+      "native\\reconcile.ts": "172d5725a3e721b822106a85b3953c8d2316581a30175e2d0cc03f54091228c7",
+      "native\\checkpoint.mjs": "bfa26455531ad4c69a67ae72ba0bde43650b51c060be8d2124b4cf40266b4231",
+      "native\\Run-Sdk.mjs": "46519a930fc8f65d07964524d0eb16c37ca704b622719823f2967d6023ce7407",
+      "native\\verification.mjs": "72cd6ab8c2bd8903958ebcb99bd3a17ea316ebb49a6b2a8c82f672b693184b2b",
+      ".github\\agents\\launch-analyst.agent.md": "dfc435d82a4507905d235489f8d37bb92e9ca04924279a0079c0e63d8d45534b",
+      ".github\\agents\\launch-reviewer.agent.md": "f39bc99f78942cbeb24a980af46f289d1869446ce6ad8918741b24eb41519f71",
+      ".github\\extensions\\launch-rescue\\extension.mjs": "a95c14b56811d87c58385fd2dbefa68fdc7efdf654ca800213f43f9b081f07e1",
+      "dist\\core.mjs": "01467aa2754f8cb75c08a59602ac8b2229c73501384a2a5c837fbdbf09e153b5",
+      "dist\\io.mjs": "f90424dcd848d57fe356779dd457b04f0eb9f3b6bcc463f596a9223e9984d2e4",
+      "dist\\reconcile.mjs": "6bf8ab46a0b87832b735828f9174d60f2bfc1404d53d7248259950a8b52ff32c"
+    }
+  },
+  "pausedStatus": "paused",
+  "resumedStatus": "completed",
+  "reportStatus": "approved",
+  "runId": "42ed8b24-62a3-4722-9879-34ac5136d088",
+  "workflowOwnedAgents": 0,
+  "verificationRounds": 2,
+  "verifiedCounts": {
+    "uniqueConfirmed": 2300,
+    "waitlisted": 200,
+    "duplicateOutcomes": 0,
+    "oversoldSeats": 0,
+    "missingAttendees": 0
+  },
+  "paidLiveModelPath": "Not invoked by this no-model proof."
+}

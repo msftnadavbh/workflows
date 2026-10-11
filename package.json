@@ -1,0 +1,29 @@
+{
+  "name": "launch-rescue-copilot-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A researched conference presentation and executable GitHub Copilot dynamic-workflow demo.",
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node demo/server.mjs",
+    "test": "npm run build && node --test tests\\core.test.mjs tests\\workflow.test.mjs tests\\server.test.mjs tests\\native-io.test.mjs tests\\checkpoint.test.mjs && python tests\\package-stage.test.py",
+    "typecheck": "tsc --noEmit",
+    "test:browser": "playwright test",
+    "test:native-e2e": "node scripts\\rehearse-native.mjs --live",
+    "deck": "node presentation/build-deck.mjs",
+    "verify:deck": "python scripts/verify-pptx.py Launch-Rescue.pptx",
+    "package:stage": "python scripts\\package-stage.py",
+    "verify:native": "node native\\verify-runtime.mjs",
+    "verify:live": "node native\\verify-live.mjs"
+  },
+  "devDependencies": {
+    "@github/copilot-sdk": "1.0.19",
+    "@playwright/test": "1.56.1",
+    "@types/node": "22.10.1",
+    "esbuild": "0.28.2",
+    "pptxgenjs": "4.0.1",
+    "typescript": "5.9.3"
+  }
+}

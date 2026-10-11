@@ -1,0 +1,199 @@
+{
+  "verifiedAt": "2026-10-11T05:04:45.850Z",
+  "engine": "actual Copilot dynamic-workflow runtime",
+  "sdkRuntime": {
+    "version": "1.0.95",
+    "protocolVersion": 3
+  },
+  "mode": "live",
+  "nativeBuild": {
+    "algorithm": "sha256",
+    "files": {
+      "demo\\core.ts": "e5298283be7ef23da79ac0a3bde58b039e3626866a5de637f3d1aa1fb362f0e1",
+      "native\\extension.ts": "297c69613a6e8b0a22b0ba7b04cce135b5df680b5663edd1d0f1f529a4d95205",
+      "native\\io.ts": "6b6c8828c76d053331f24e298a23d0a7abc86bbcfc7c1f47f95ddb5a56d04bef",
+      "native\\reconcile.ts": "172d5725a3e721b822106a85b3953c8d2316581a30175e2d0cc03f54091228c7",
+      "native\\checkpoint.mjs": "bfa26455531ad4c69a67ae72ba0bde43650b51c060be8d2124b4cf40266b4231",
+      "native\\Run-Sdk.mjs": "46519a930fc8f65d07964524d0eb16c37ca704b622719823f2967d6023ce7407",
+      "native\\verification.mjs": "72cd6ab8c2bd8903958ebcb99bd3a17ea316ebb49a6b2a8c82f672b693184b2b",
+      ".github\\agents\\launch-analyst.agent.md": "dfc435d82a4507905d235489f8d37bb92e9ca04924279a0079c0e63d8d45534b",
+      ".github\\agents\\launch-reviewer.agent.md": "f39bc99f78942cbeb24a980af46f289d1869446ce6ad8918741b24eb41519f71",
+      ".github\\extensions\\launch-rescue\\extension.mjs": "a95c14b56811d87c58385fd2dbefa68fdc7efdf654ca800213f43f9b081f07e1",
+      "dist\\core.mjs": "01467aa2754f8cb75c08a59602ac8b2229c73501384a2a5c837fbdbf09e153b5",
+      "dist\\io.mjs": "f90424dcd848d57fe356779dd457b04f0eb9f3b6bcc463f596a9223e9984d2e4",
+      "dist\\reconcile.mjs": "6bf8ab46a0b87832b735828f9174d60f2bfc1404d53d7248259950a8b52ff32c"
+    }
+  },
+  "status": "completed",
+  "pausedStatus": "paused",
+  "sameRunResume": true,
+  "agentsAddedOnResume": 0,
+  "actualWorkflowOwnedAgents": [
+    {
+      "label": "dedupe-specialist-1",
+      "status": "completed",
+      "requestedModel": "gpt-6.1-sol",
+      "resolvedModel": "gpt-6.1-sol",
+      "activeMs": 12472
+    },
+    {
+      "label": "capacity-specialist-2",
+      "status": "completed",
+      "requestedModel": "gpt-6.1-sol",
+      "resolvedModel": "gpt-6.1-sol",
+      "activeMs": 19475
+    },
+    {
+      "label": "independent-review",
+      "status": "completed",
+      "requestedModel": "claude-sonnet-5.5",
+      "resolvedModel": "claude-sonnet-5.5",
+      "activeMs": 5077
+    }
+  ],
+  "explicitReasoningOptions": {
+    "analyst": "max",
+    "independentReviewer": "high"
+  },
+  "report": {
+    "version": "launch-rescue-v2",
+    "runId": "ec47f5a3-3841-488b-97ef-58d99e39ddb8",
+    "synthetic": true,
+    "scenario": "mixed",
+    "mode": "live",
+    "seed": 42,
+    "status": "approved",
+    "policy": {
+      "dedupe": true,
+      "capacity": true
+    },
+    "before": {
+      "requestCount": 3000,
+      "confirmed": 3000,
+      "uniqueConfirmed": 2500,
+      "waitlisted": 0,
+      "ignoredRetries": 0,
+      "duplicateOutcomes": 500,
+      "oversoldSeats": 500,
+      "missingAttendees": 0,
+      "occupancy": [
+        {
+          "room": "Main hall",
+          "used": 1800,
+          "capacity": 1800
+        },
+        {
+          "room": "Studio",
+          "used": 1200,
+          "capacity": 700
+        }
+      ],
+      "checks": [
+        {
+          "id": "C-UNIQUE",
+          "title": "One outcome per attendee",
+          "passed": false,
+          "detail": "500 duplicate outcomes"
+        },
+        {
+          "id": "C-CAPACITY",
+          "title": "Never exceed room capacity",
+          "passed": false,
+          "detail": "500 seats over capacity"
+        },
+        {
+          "id": "C-COVERAGE",
+          "title": "No attendee disappears",
+          "passed": true,
+          "detail": "0 missing attendees"
+        }
+      ]
+    },
+    "after": {
+      "requestCount": 3000,
+      "confirmed": 2300,
+      "uniqueConfirmed": 2300,
+      "waitlisted": 200,
+      "ignoredRetries": 500,
+      "duplicateOutcomes": 0,
+      "oversoldSeats": 0,
+      "missingAttendees": 0,
+      "occupancy": [
+        {
+          "room": "Main hall",
+          "used": 1600,
+          "capacity": 1600
+        },
+        {
+          "room": "Studio",
+          "used": 700,
+          "capacity": 700
+        }
+      ],
+      "checks": [
+        {
+          "id": "C-UNIQUE",
+          "title": "One outcome per attendee",
+          "passed": true,
+          "detail": "0 duplicate outcomes"
+        },
+        {
+          "id": "C-CAPACITY",
+          "title": "Never exceed room capacity",
+          "passed": true,
+          "detail": "0 seats over capacity"
+        },
+        {
+          "id": "C-COVERAGE",
+          "title": "No attendee disappears",
+          "passed": true,
+          "detail": "0 missing attendees"
+        }
+      ]
+    },
+    "repairs": [
+      {
+        "repair": "dedupe",
+        "rationale": "E-RETRY reports 3000 requests for 2500 attendees, including 500 retries. Deduplicate by ticket ID and reuse the first decision for subsequent requests with that ID.",
+        "evidenceIds": [
+          "E-RETRY"
+        ],
+        "round": 1,
+        "evidenceSnapshot": [
+          {
+            "id": "E-RETRY",
+            "summary": "3000 requests represent 2500 attendees; 500 are retries.",
+            "count": 500
+          }
+        ]
+      },
+      {
+        "repair": "capacity",
+        "rationale": "E-INVENTORY reports that published inventory exceeds current room capacity by 200 seats. Set inventory to the current room capacity and waitlist the 200 excess attendees.",
+        "evidenceIds": [
+          "E-INVENTORY"
+        ],
+        "round": 2,
+        "evidenceSnapshot": [
+          {
+            "id": "E-INVENTORY",
+            "summary": "Published inventory exceeds current room capacity by 200 seats.",
+            "count": 200
+          }
+        ]
+      }
+    ],
+    "verificationRounds": 2,
+    "reviewer": {
+      "verdict": "accept",
+      "rationale": "All three contract checks pass. The counts reconcile: 3000 requests minus 500 ignored retries gives 2500 attendees, and 2300 confirmed plus 200 waitlisted gives 2500, so none are missing. Room occupancy is at but not above capacity (1600/1600 and 700/700), with 0 oversold seats. Each repair matches its own snapshot, and the final policy (dedupe and capacity) matches current evidence E-RETRY and E-INVENTORY. This is a synthetic local result only, not a claim of production readiness.",
+      "evidenceIds": [
+        "E-RETRY",
+        "E-INVENTORY"
+      ]
+    },
+    "note": "Synthetic local release candidate only. No deployment, real tickets, purchases, or remote writes."
+  },
+  "browserE2E": true,
+  "note": "Synthetic local draft; no deployment, purchase, or remote write."
+}

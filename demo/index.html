@@ -1,0 +1,391 @@
+<!doctype html>
+<!--
+THESIS: Evidence redraws the workflow. This is an execution trace, not a wall of agent cards.
+OWN-WORLD: Clawpilot charcoal and warm paper, rose switches, Segoe UI, flat trace lanes, explicit status words.
+STORY: Choose a synthetic fault, run real checks, watch a specialist join, inspect the evidence, approve a local draft.
+FIRST VIEWPORT: Large mission statement, audience-choice toolbar, full-width causal graph, measured outcomes and acceptance gate.
+FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph carries the work; phase tools change around it.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A working, local-only demonstration of evidence-driven GitHub Copilot dynamic workflows.">
+  <title>Launch Rescue | Watch the plan change</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--cp-bg); color: var(--cp-text); font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif; }
+    button, input, select { font: inherit; }
+    button, select { min-height: 44px; }
+    button { cursor: pointer; border: 1px solid var(--cp-border-strong); border-radius: .625rem; color: var(--cp-text); background: var(--cp-surface); padding: 10px 18px; font-weight: 600; transition: background .16s ease, border-color .16s ease; }
+    button:hover:not(:disabled) { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+    button:disabled { cursor: not-allowed; opacity: .6; }
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--cp-accent); outline-offset: 4px; }
+    .primary { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: var(--cp-accent); }
+    .primary:hover:not(:disabled) { background: var(--cp-accent-hover); border-color: var(--cp-accent-hover); }
+    .quiet { background: none; border-color: var(--cp-border); }
+    a { color: var(--cp-link); text-underline-offset: 3px; }
+    code, pre, .mono { font-family: Consolas, "Courier New", Courier, monospace; }
+    .shell { max-width: 1880px; margin: auto; padding: 24px 40px 36px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
+    .brand svg { width: 32px; height: 32px; stroke: var(--cp-accent); fill: none; stroke-width: 2.5; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .top-actions button { font-size: 14px; padding: 8px 14px; }
+    .intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding: 26px 0 28px; }
+    h1 { font-size: clamp(40px, 4.5vw, 78px); line-height: 1.04; letter-spacing: -.035em; margin: 0; font-weight: 750; text-wrap: balance; }
+    .intro p { margin: 14px 0 0; max-width: 68ch; font-size: 20px; line-height: 1.5; color: var(--cp-text-soft); }
+    .mode-control { display: flex; border: 1px solid var(--cp-border-strong); border-radius: .625rem; padding: 4px; gap: 4px; flex-shrink: 0; }
+    .mode-control button { background: none; border-color: var(--cp-bg); font-size: 15px; white-space: nowrap; }
+    .mode-control button[aria-pressed="true"] { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-accent-fg); }
+    .truth-strip { display: flex; justify-content: space-between; gap: 20px; padding: 12px 16px; border: 1px solid var(--cp-border); border-radius: .625rem; background: var(--cp-bg-elevated); font-size: 15px; line-height: 1.5; }
+    .truth-strip strong { color: var(--cp-accent); }
+    .truth-strip span:last-child { color: var(--cp-text-soft); }
+    .runbar { display: flex; align-items: center; gap: 24px; padding: 22px 0; border-bottom: 1px solid var(--cp-border); }
+    fieldset { margin: 0; border: 0; padding: 0; min-width: 0; flex: 1; }
+    legend { font-size: 16px; font-weight: 650; margin-bottom: 10px; }
+    .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+    .scenario-choice { font-size: 17px; font-weight: 550; padding: 10px 16px; border-color: var(--cp-border-strong); }
+    .scenario-choice[aria-pressed="true"] { border-color: var(--cp-accent); background: var(--cp-accent-soft); color: var(--cp-accent); }
+    .transport { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    #run-button { font-size: 19px; min-width: 164px; min-height: 50px; }
+    .pace { display: grid; gap: 4px; font-size: 13px; color: var(--cp-text-soft); }
+    select, input { background: var(--cp-surface); border: 1px solid var(--cp-border-strong); border-radius: .625rem; color: var(--cp-text); padding: 8px 10px; }
+    .graph-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 0 14px; }
+    h2 { margin: 0; font-size: 23px; letter-spacing: -.02em; font-weight: 650; }
+    .run-state { display: flex; align-items: center; gap: 16px; font-size: 16px; }
+    .state-label { font-weight: 650; }
+    .state-label::before { content: ""; display: inline-block; width: 10px; height: 10px; background: var(--cp-text-soft); border-radius: 50%; margin-right: 8px; }
+    .state-label[data-state="running"]::before { background: var(--cp-accent); }
+    .state-label[data-state="completed"]::before { background: var(--cp-success); }
+    .state-label[data-state="error"]::before { background: var(--cp-danger); }
+    .state-label[data-state="awaiting-approval"]::before, .state-label[data-state="paused"]::before { background: var(--cp-warning); }
+    #phase-label { color: var(--cp-text-soft); }
+    #flow-summary { margin: 0 0 14px; font-size: 19px; line-height: 1.5; color: var(--cp-text-soft); max-width: 90ch; }
+    .graph-wrap { border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-bg-elevated); overflow: auto; }
+    .graph-wrap:focus-visible { outline: 3px solid var(--cp-accent); outline-offset: 4px; }
+    #workflow-graph { display: block; width: 100%; height: auto; min-height: 250px; }
+    .graph-lane-label { fill: var(--cp-text-soft); font-size: 18px; font-weight: 500; }
+    .graph-separator { stroke: var(--cp-border); stroke-width: 1; }
+    .graph-wire { fill: none; stroke: var(--cp-border-strong); stroke-width: 2; stroke-dasharray: 5 5; }
+    .graph-wire.active { stroke: var(--cp-accent); stroke-width: 3; stroke-dasharray: none; }
+    .graph-node { outline: none; cursor: pointer; }
+    .graph-node rect { fill: var(--cp-surface); stroke: var(--cp-border-strong); stroke-width: 1.5; }
+    .graph-node[data-state="running"] rect { stroke: var(--cp-accent); stroke-width: 3; }
+    .graph-node[data-state="done"] rect { stroke: var(--cp-accent); }
+    .graph-node[data-state="failed"] rect, .graph-node[data-state="error"] rect { stroke: var(--cp-danger); stroke-width: 2.5; }
+    .graph-node[data-state="passed"] rect { stroke: var(--cp-success); stroke-width: 2.5; }
+    .graph-node:focus-visible rect { stroke: var(--cp-accent); stroke-width: 4; }
+    .graph-title { fill: var(--cp-text); font-size: 22px; font-weight: 600; }
+    .graph-kind { fill: var(--cp-text-soft); font-size: 14px; }
+    .graph-status { fill: var(--cp-text-soft); font-size: 16px; }
+    .graph-node[data-state="running"] .graph-status { fill: var(--cp-accent); }
+    .graph-placeholder { fill: var(--cp-text-soft); font-size: 20px; }
+    .graph-branch-label { fill: var(--cp-accent); font-size: 19px; font-weight: 600; }
+    .graph-foot { display: flex; justify-content: space-between; gap: 16px; padding: 12px 16px; border-top: 1px solid var(--cp-border); font-size: 14px; color: var(--cp-text-soft); }
+    .graph-foot .legend { display: flex; gap: 18px; }
+    .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border: 1px solid var(--cp-border-strong); border-radius: 2px; background: var(--cp-surface); }
+    .legend .agent-key::before { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+    #twist-banner { padding: 15px 20px; margin-top: 16px; border: 1px solid var(--cp-accent); border-radius: .625rem; background: var(--cp-accent-soft); }
+    #twist-banner strong { font-size: 21px; }
+    #twist-banner p { margin: 6px 0 0; color: var(--cp-text-soft); font-size: 16px; line-height: 1.5; }
+    .results { display: grid; grid-template-columns: 1.15fr 1fr; gap: 36px; padding-top: 24px; }
+    .result-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+    .result-heading span { color: var(--cp-text-soft); font-size: 14px; }
+    .outcomes { display: flex; gap: 32px; border-bottom: 1px solid var(--cp-border); padding-bottom: 20px; }
+    .outcome { flex: 1; min-width: 0; }
+    .outcome .number { font-size: 38px; font-weight: 650; letter-spacing: -.035em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .outcome .label { font-size: 15px; color: var(--cp-text-soft); margin-top: 6px; }
+    .outcome .comparison { font-size: 14px; margin-top: 6px; color: var(--cp-text-soft); }
+    #evidence-feed { padding: 12px 0 0; margin: 0; list-style: none; display: grid; gap: 10px; }
+    #evidence-feed li { font-size: 16px; line-height: 1.5; display: grid; grid-template-columns: 112px 1fr; gap: 12px; }
+    #evidence-feed code { font-size: 13px; color: var(--cp-text-soft); padding-top: 3px; }
+    .checks { display: grid; gap: 0; border-top: 1px solid var(--cp-border); }
+    .check { display: flex; align-items: center; gap: 16px; padding: 15px 0; border-bottom: 1px solid var(--cp-border); }
+    .check-status { width: 54px; flex-shrink: 0; font-size: 13px; font-weight: 700; padding: 6px 0; text-align: center; border: 1px solid var(--cp-border-strong); border-radius: 5px; }
+    .check-status[data-result="pass"] { border-color: var(--cp-success); }
+    .check-status[data-result="fail"] { border-color: var(--cp-danger); }
+    .check-name { font-weight: 600; font-size: 17px; }
+    .check-detail { font-size: 14px; color: var(--cp-text-soft); margin-top: 3px; }
+    #approval-panel { margin-top: 18px; padding: 20px; border: 1px solid var(--cp-accent); border-radius: 16px; background: var(--cp-accent-soft); }
+    #approval-panel p { font-size: 16px; line-height: 1.5; margin: 8px 0 16px; color: var(--cp-text-soft); }
+    .approval-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    #native-panel { padding: 20px; margin: 20px 0 0; border: 1px solid var(--cp-border-strong); border-radius: 16px; background: var(--cp-surface); }
+    #native-panel h2 { font-size: 22px; }
+    #native-panel p { font-size: 16px; line-height: 1.6; max-width: 88ch; }
+    .command-row { display: flex; align-items: center; gap: 12px; }
+    .command-row code { padding: 12px 14px; border: 1px solid var(--cp-border); border-radius: .625rem; background: var(--cp-surface-soft); font-size: 15px; overflow-wrap: anywhere; flex: 1; }
+    .native-facts { display: flex; gap: 24px; flex-wrap: wrap; font-size: 14px; color: var(--cp-text-soft); margin-top: 16px; }
+    #notice { margin-top: 18px; padding: 16px 20px; border: 1px solid var(--cp-danger); border-radius: .625rem; background: var(--cp-surface); color: var(--cp-text); line-height: 1.5; }
+    #task-inspector { border: 1px solid var(--cp-border); border-radius: .625rem; padding: 18px 20px; margin-top: 20px; background: var(--cp-surface); }
+    #task-inspector p { margin: 8px 0 0; font-size: 16px; line-height: 1.6; color: var(--cp-text-soft); white-space: pre-line; }
+    #task-inspector button { float: right; padding: 6px 12px; min-height: 36px; }
+    #presenter-cue { margin-top: 18px; border: 1px solid var(--cp-border); border-radius: .625rem; padding: 16px; }
+    #presenter-cue p { margin: 8px 0 0; font-size: 19px; line-height: 1.5; }
+    .details-row { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    details { border-top: 1px solid var(--cp-border); padding: 16px 0; }
+    summary { font-size: 16px; cursor: pointer; font-weight: 600; padding: 4px 0; }
+    details p, details li { line-height: 1.6; color: var(--cp-text-soft); font-size: 15px; }
+    details ol { padding-left: 22px; }
+    pre { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: .625rem; font-size: 13px; line-height: 1.6; padding: 18px; max-height: 480px; overflow: auto; }
+    .seed-control { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 15px; }
+    .seed-control input { width: 140px; }
+    footer { display: flex; justify-content: space-between; gap: 24px; padding-top: 20px; margin-top: 8px; border-top: 1px solid var(--cp-border); font-size: 13px; line-height: 1.6; color: var(--cp-text-soft); }
+    footer a { color: var(--cp-text-soft); }
+    html[data-stage="true"] .shell { max-width: none; padding: 16px 28px 12px; }
+    html[data-stage="true"] .intro { padding: 18px 0; }
+    html[data-stage="true"] h1 { font-size: 54px; }
+    html[data-stage="true"] .intro p { display: none; }
+    html[data-stage="true"] .details-row, html[data-stage="true"] footer { display: none; }
+    html[data-stage="true"] .truth-strip { font-size: 16px; }
+    html[data-stage="true"] .runbar { padding: 16px 0; }
+    html[data-stage="true"] .results { padding-top: 16px; }
+    @media (min-width: 1101px) {
+      html[data-stage="true"] .intro { position: absolute; top: 16px; right: 340px; padding: 0; }
+      html[data-stage="true"] .intro > div:first-child { display: none; }
+      html[data-stage="true"] .truth-strip { margin-top: 12px; padding: 8px 16px; }
+      html[data-stage="true"] .runbar { padding: 12px 0; }
+      html[data-stage="true"] .graph-header { padding: 12px 0 8px; }
+      html[data-stage="true"] .graph-foot { display: none; }
+      html[data-stage="true"] #twist-banner { padding: 10px 16px; margin-top: 10px; }
+      html[data-stage="true"] #twist-banner p { display: none; }
+      html[data-stage="true"] #evidence-feed { display: none; }
+      html[data-stage="true"] .result-heading { margin-bottom: 8px; }
+      html[data-stage="true"] .check { padding: 7px 0; }
+      html[data-stage="true"] .check-name { font-size: 18px; }
+      html[data-stage="true"] .check-detail { display: none; }
+      html[data-stage="true"] .outcome .comparison { font-size: 16px; }
+      html[data-stage="true"] .pace { font-size: 16px; }
+      html[data-stage="true"] .run-state { font-size: 18px; }
+      html[data-stage="true"] .outcomes { padding-bottom: 12px; }
+      html[data-stage="true"] #approval-panel { padding: 0; margin-top: 12px; border: 0; background: none; }
+      html[data-stage="true"] #approval-panel h2, html[data-stage="true"] #approval-panel p { display: none; }
+      html[data-stage="true"][data-native-connected="true"] #approval-panel p { display: block; font-size: 16px; margin: 4px 0 8px; }
+      html[data-stage="true"][data-native-connected="true"]:not([data-native-setup="true"]) #native-panel { display: none; }
+      html[data-stage="true"] #flow-summary { margin-bottom: 6px; font-size: 18px; }
+    }
+    [hidden] { display: none !important; }
+    @media (min-width: 1800px) {
+      .scenario-choice { font-size: 19px; }
+      .truth-strip { font-size: 17px; }
+      .check-name { font-size: 20px; }
+      #evidence-feed li { font-size: 19px; }
+      .outcome .label { font-size: 17px; }
+    }
+    @media (max-width: 1100px) {
+      .shell { padding: 20px 24px 28px; }
+      .intro { display: block; }
+      .mode-control { display: inline-flex; margin-top: 20px; }
+      .runbar { display: block; }
+      .transport { justify-content: flex-start; margin-top: 18px; }
+      #workflow-graph { min-width: 880px; }
+      .results { gap: 24px; }
+    }
+    @media (max-width: 680px) {
+      .shell, html[data-stage="true"] .shell { padding: 16px; }
+      .brand { font-size: 20px; }
+      .topbar { align-items: flex-start; gap: 12px; }
+      .top-actions { flex-wrap: wrap; justify-content: flex-end; max-width: 140px; }
+      .top-actions button { min-height: 36px; padding: 6px 10px; font-size: 12px; }
+      h1, html[data-stage="true"] h1 { font-size: 42px; }
+      .intro p { font-size: 17px; }
+      .mode-control { width: 100%; }
+      .mode-control button { flex: 1; font-size: 13px; padding: 10px 8px; }
+      .truth-strip { display: block; font-size: 14px; }
+      .truth-strip span { display: block; }
+      .truth-strip span:last-child { margin-top: 4px; }
+      .choices { display: grid; grid-template-columns: 1fr 1fr; }
+      .scenario-choice { font-size: 15px; padding: 12px 8px; }
+      .transport { gap: 6px; }
+      #run-button { min-width: 140px; font-size: 17px; }
+      .pace { width: 100%; display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+      .graph-header { align-items: flex-start; }
+      #flow-summary { font-size: 16px; }
+      h2 { font-size: 20px; }
+      .run-state { display: grid; gap: 4px; font-size: 14px; text-align: right; }
+      .graph-foot { display: block; font-size: 13px; }
+      .graph-foot .legend { margin-top: 8px; }
+      .results { grid-template-columns: 1fr; }
+      .outcomes { gap: 16px; }
+      .outcome .number { font-size: 32px; }
+      #evidence-feed li { grid-template-columns: 94px 1fr; font-size: 15px; }
+      #evidence-feed code { font-size: 12px; }
+      .details-row { grid-template-columns: 1fr; gap: 0; }
+      .command-row { display: block; }
+      .command-row code { display: block; font-size: 13px; }
+      .command-row button { margin-top: 10px; }
+      footer { display: block; }
+      footer span { display: block; margin-top: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 6v10c0 6 20 0 20 10M6 16c0 6 20 0 20-10"/><circle cx="6" cy="5" r="3"/><circle cx="26" cy="5" r="3"/><circle cx="26" cy="27" r="3"/></svg>
+        <span>Launch Rescue</span>
+      </div>
+      <div class="top-actions">
+        <button class="quiet" id="cue-toggle" aria-pressed="false">Presenter cues</button>
+        <button class="quiet" id="stage-toggle" aria-pressed="false">Stage view</button>
+        <button class="quiet" id="theme-toggle" aria-label="Switch color theme">Theme</button>
+      </div>
+    </header>
+    <section class="intro" aria-labelledby="mission-title">
+      <div>
+        <h1 id="mission-title">Watch the plan change.</h1>
+        <p>2,500 attendees. A broken ticket launch. Evidence decides which specialists join.</p>
+      </div>
+      <div class="mode-control" role="group" aria-label="Execution mode">
+        <button id="offline-mode" aria-pressed="true">Offline rehearsal</button>
+        <button id="native-mode" aria-pressed="false">Native Copilot</button>
+      </div>
+    </section>
+    <div class="truth-strip" id="truth-strip">
+      <span><strong id="mode-label">OFFLINE REHEARSAL</strong> <span id="mode-description">Real JavaScript workers and checks. No LLM calls.</span></span>
+      <span>Synthetic data. Local draft only. Nothing deployed.</span>
+    </div>
+    <div id="notice" role="alert" hidden></div>
+    <section id="native-panel" hidden aria-labelledby="native-title">
+      <h2 id="native-title">Run the real workflow in Copilot.</h2>
+      <p>This page observes local artifacts; it does not start models. Review the extension, run <code>npm ci</code> once, and check your Copilot sign-in and preview eligibility. The version-matched SDK runner uses <strong>GPT-6.1 Sol / max</strong> and <strong>Sonnet 5.5 / high</strong>.</p>
+      <div class="command-row">
+        <code id="native-command">node .\native\Run-Sdk.mjs --live --pause</code>
+        <button id="copy-command">Copy command</button>
+      </div>
+      <div class="native-facts"><span id="observer-status">Checking local observer…</span><span>Preview + eligible Copilot plan required</span><span>Actual usage: inspect /workflows</span></div>
+      <p>Use <code>--rehearsal --pause</code> for an actual-runtime test without models. The SDK terminal waits for your review at the checkpoint. If you launch the extension in an app/CLI session instead, use that session's <code>/workflows</code> view. Browser approval never resumes native work.</p>
+    </section>
+    <section class="runbar" aria-label="Mission controls">
+      <fieldset id="scenario-controls">
+        <legend>Ask the room: what should break?</legend>
+        <div class="choices">
+          <button class="scenario-choice" data-scenario="retries" aria-pressed="false">Retry storm</button>
+          <button class="scenario-choice" data-scenario="capacity" aria-pressed="false">Room switch</button>
+          <button class="scenario-choice" data-scenario="parallel" aria-pressed="false">Both at once</button>
+          <button class="scenario-choice" data-scenario="mixed" aria-pressed="true">Surprise me</button>
+        </div>
+      </fieldset>
+      <div class="transport">
+        <button class="primary" id="run-button">Run rescue</button>
+        <button id="pause-button" disabled>Pause</button>
+        <button class="quiet" id="reset-button">New run</button>
+        <label class="pace" for="pace-select">Presentation pacing
+          <select id="pace-select"><option value="650">Normal</option><option value="120">Fast</option><option value="0">Instant</option></select>
+        </label>
+      </div>
+    </section>
+    <section aria-labelledby="graph-title">
+      <div class="graph-header">
+        <h2 id="graph-title">The execution graph</h2>
+        <div class="run-state" aria-live="polite"><span class="state-label" id="status-label" data-state="idle">Ready</span><span id="phase-label">Choose a failure</span></div>
+      </div>
+      <p id="flow-summary" role="status">Choose a failure, run the rescue, and follow the evidence from left to right.</p>
+      <div class="graph-wrap" tabindex="0" aria-label="Scrollable execution graph">
+        <svg id="workflow-graph" viewBox="0 0 1540 365" role="group" aria-label="Major workflow stages; select a node to inspect actual execution"></svg>
+        <div class="graph-foot"><span id="graph-caption">Major stages shown. Specialist nodes appear only when evidence requires them.</span><div class="legend"><span>Code + checks</span><span class="agent-key" id="specialist-legend">Local workers</span><span>Human gate</span></div></div>
+      </div>
+      <div id="twist-banner" hidden><strong>Plot twist: 200 seats disappear.</strong><p>The first plan is already built. A failed acceptance check must change the next step.</p></div>
+      <aside id="task-inspector" hidden aria-labelledby="inspector-title"><button id="close-inspector" aria-label="Close task details">Close</button><h2 id="inspector-title">Task details</h2><p id="inspector-detail"></p></aside>
+      <aside id="presenter-cue" hidden><strong>Say this</strong><p id="cue-text">“Which failure should we trigger? Show of hands. We won't choose the agents; the evidence will.”</p></aside>
+    </section>
+    <section class="results" aria-label="Measured evidence and acceptance checks">
+      <div>
+        <div class="result-heading"><h2>Measured synthetic outcomes</h2><span id="measurement-label">Waiting for execution</span></div>
+        <div class="outcomes">
+          <div class="outcome"><div class="number" id="duplicate-count">—</div><div class="label">Duplicate outcomes</div><div class="comparison" id="duplicate-before">No fixture evaluated yet</div></div>
+          <div class="outcome"><div class="number" id="oversold-count">—</div><div class="label">Seats over capacity</div><div class="comparison" id="oversold-before">No fixture evaluated yet</div></div>
+          <div class="outcome"><div class="number" id="confirmed-count">—</div><div class="label">Unique confirmations</div><div class="comparison" id="waitlist-count">No fixture evaluated yet</div></div>
+        </div>
+        <ul id="evidence-feed" aria-label="Latest evidence"><li><code>WAITING</code><span>The graph is driven by execution events, not a prerecorded animation.</span></li></ul>
+      </div>
+      <div>
+        <div class="result-heading"><h2>The acceptance gate</h2><span id="checks-total">0 / 3 run</span></div>
+        <div class="checks" id="checks-list"></div>
+        <div id="approval-panel" hidden>
+          <h2 id="approval-title">A human still decides.</h2>
+          <p id="approval-detail">The checks and independent review pass. Approve only this synthetic local draft, or keep it on hold.</p>
+          <div class="approval-actions">
+            <button class="primary" id="approve-button">Approve local draft</button>
+            <button id="hold-button">Keep on hold</button>
+            <button id="download-button">Download evidence</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="details-row" aria-label="Technical details and presenter help">
+      <details><summary>Read the actual workflow source</summary><p>This is the source bundled into both the standalone runner and the native extension. Rehearsal takes the JavaScript branch; live mode calls <code>ctx.agent</code>.</p><pre id="workflow-source"></pre></details>
+      <details><summary>How to present this demo</summary>
+        <ol><li>Ask the audience to choose a failure. Run “Both at once” to show parallel specialists.</li><li>Choose “Surprise me” for the new-evidence moment. Point to the failed capacity check and new branch.</li><li>Pause, explain the saved steps, then resume. At the review gate, inspect evidence before approving.</li><li>Use Native Copilot for actual model calls. If unavailable, say “This is the offline rehearsal: real checks, no LLM.”</li></ol>
+        <p>Keyboard: <strong>S</strong> run/resume, <strong>P</strong> pause, <strong>V</strong> stage view. Shortcuts do not run while editing a field. Pacing includes intentional presentation delays; this is not a performance benchmark.</p>
+        <label class="seed-control" for="seed-input">Synthetic fixture seed <input id="seed-input" type="number" value="42" min="1" max="9999999" step="1"></label>
+      </details>
+    </section>
+    <footer><span>GitHub Copilot dynamic workflows are public preview. Availability and APIs may change.<br><a href="https://docs.github.com/en/copilot/concepts/agents/dynamic-workflows" target="_blank" rel="noreferrer">Official concepts</a> · <a href="https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-dynamic-workflows" target="_blank" rel="noreferrer">Official how-to</a> · <a href="https://github.com/github/copilot-sdk/blob/v1.0.19/nodejs/docs/workflows.md" target="_blank" rel="noreferrer">SDK API</a></span><span>Built for a 2,500-person room.<br>Evidence → bounded repair → independent challenge → human checkpoint.</span></footer>
+  </main>
+  <noscript>This demo requires JavaScript. All computations are local in offline rehearsal mode.</noscript>
+  <!-- BUNDLED_APPLICATION -->
+</body>
+</html>

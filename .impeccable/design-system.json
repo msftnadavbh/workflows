@@ -1,0 +1,31 @@
+{
+  "name": "Launch Rescue",
+  "source": "demo\\index.html",
+  "themeVariablePrefix": "--cp-",
+  "strategy": "Restrained Clawpilot neutrals with one rose accent",
+  "components": {
+    "focus": {
+      "selector": ":focus-visible",
+      "outline": "3px solid var(--cp-accent)",
+      "outlineOffset": "4px"
+    },
+    "graph": {
+      "role": "Execution trace with causal columns and evidence-driven branches",
+      "nodeRadius": "10px",
+      "panelRadius": "16px",
+      "nativeMode": "Read-only observer"
+    }
+  },
+  "responsive": {
+    "medium": "1100px",
+    "narrow": "680px",
+    "stageViewport": "1920x1080",
+    "narrowGraph": "Internal horizontal scrolling; no page-level overflow"
+  },
+  "motion": {
+    "default": "Minimal control transitions",
+    "reducedMotion": "Transitions disabled",
+    "pacing": "Intentional rehearsal delays, not a latency benchmark"
+  },
+  "provenance": "Recorded from shipped CSS and graph implementation after independent visual QA."
+}

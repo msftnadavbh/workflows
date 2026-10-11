@@ -1,0 +1,17 @@
+node_modules/
+test-results/
+playwright-report/
+runs/
+session-state/
+installed-plugins/
+.impeccable/*
+!.impeccable/design-system.json
+__pycache__/
+*.py[cod]
+.env
+.env.*
+native/last-result.json
+native/last-usage.json
+presentation/rendered/
+presentation/extracted-text.txt
+presentation/slide-preview.pdf

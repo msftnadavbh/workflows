@@ -1,0 +1,6 @@
+{
+  "scenario": "mixed",
+  "mode": "rehearsal",
+  "seed": 42,
+  "pauseForApproval": true
+}

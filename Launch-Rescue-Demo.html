@@ -1,0 +1,1927 @@
+<!doctype html>
+<!--
+THESIS: Evidence redraws the workflow. This is an execution trace, not a wall of agent cards.
+OWN-WORLD: Clawpilot charcoal and warm paper, rose switches, Segoe UI, flat trace lanes, explicit status words.
+STORY: Choose a synthetic fault, run real checks, watch a specialist join, inspect the evidence, approve a local draft.
+FIRST VIEWPORT: Large mission statement, audience-choice toolbar, full-width causal graph, measured outcomes and acceptance gate.
+FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph carries the work; phase tools change around it.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A working, local-only demonstration of evidence-driven GitHub Copilot dynamic workflows.">
+  <title>Launch Rescue | Watch the plan change</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--cp-bg); color: var(--cp-text); font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif; }
+    button, input, select { font: inherit; }
+    button, select { min-height: 44px; }
+    button { cursor: pointer; border: 1px solid var(--cp-border-strong); border-radius: .625rem; color: var(--cp-text); background: var(--cp-surface); padding: 10px 18px; font-weight: 600; transition: background .16s ease, border-color .16s ease; }
+    button:hover:not(:disabled) { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+    button:disabled { cursor: not-allowed; opacity: .6; }
+    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--cp-accent); outline-offset: 4px; }
+    .primary { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: var(--cp-accent); }
+    .primary:hover:not(:disabled) { background: var(--cp-accent-hover); border-color: var(--cp-accent-hover); }
+    .quiet { background: none; border-color: var(--cp-border); }
+    a { color: var(--cp-link); text-underline-offset: 3px; }
+    code, pre, .mono { font-family: Consolas, "Courier New", Courier, monospace; }
+    .shell { max-width: 1880px; margin: auto; padding: 24px 40px 36px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
+    .brand svg { width: 32px; height: 32px; stroke: var(--cp-accent); fill: none; stroke-width: 2.5; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .top-actions button { font-size: 14px; padding: 8px 14px; }
+    .intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding: 26px 0 28px; }
+    h1 { font-size: clamp(40px, 4.5vw, 78px); line-height: 1.04; letter-spacing: -.035em; margin: 0; font-weight: 750; text-wrap: balance; }
+    .intro p { margin: 14px 0 0; max-width: 68ch; font-size: 20px; line-height: 1.5; color: var(--cp-text-soft); }
+    .mode-control { display: flex; border: 1px solid var(--cp-border-strong); border-radius: .625rem; padding: 4px; gap: 4px; flex-shrink: 0; }
+    .mode-control button { background: none; border-color: var(--cp-bg); font-size: 15px; white-space: nowrap; }
+    .mode-control button[aria-pressed="true"] { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-accent-fg); }
+    .truth-strip { display: flex; justify-content: space-between; gap: 20px; padding: 12px 16px; border: 1px solid var(--cp-border); border-radius: .625rem; background: var(--cp-bg-elevated); font-size: 15px; line-height: 1.5; }
+    .truth-strip strong { color: var(--cp-accent); }
+    .truth-strip span:last-child { color: var(--cp-text-soft); }
+    .runbar { display: flex; align-items: center; gap: 24px; padding: 22px 0; border-bottom: 1px solid var(--cp-border); }
+    fieldset { margin: 0; border: 0; padding: 0; min-width: 0; flex: 1; }
+    legend { font-size: 16px; font-weight: 650; margin-bottom: 10px; }
+    .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+    .scenario-choice { font-size: 17px; font-weight: 550; padding: 10px 16px; border-color: var(--cp-border-strong); }
+    .scenario-choice[aria-pressed="true"] { border-color: var(--cp-accent); background: var(--cp-accent-soft); color: var(--cp-accent); }
+    .transport { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    #run-button { font-size: 19px; min-width: 164px; min-height: 50px; }
+    .pace { display: grid; gap: 4px; font-size: 13px; color: var(--cp-text-soft); }
+    select, input { background: var(--cp-surface); border: 1px solid var(--cp-border-strong); border-radius: .625rem; color: var(--cp-text); padding: 8px 10px; }
+    .graph-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 0 14px; }
+    h2 { margin: 0; font-size: 23px; letter-spacing: -.02em; font-weight: 650; }
+    .run-state { display: flex; align-items: center; gap: 16px; font-size: 16px; }
+    .state-label { font-weight: 650; }
+    .state-label::before { content: ""; display: inline-block; width: 10px; height: 10px; background: var(--cp-text-soft); border-radius: 50%; margin-right: 8px; }
+    .state-label[data-state="running"]::before { background: var(--cp-accent); }
+    .state-label[data-state="completed"]::before { background: var(--cp-success); }
+    .state-label[data-state="error"]::before { background: var(--cp-danger); }
+    .state-label[data-state="awaiting-approval"]::before, .state-label[data-state="paused"]::before { background: var(--cp-warning); }
+    #phase-label { color: var(--cp-text-soft); }
+    #flow-summary { margin: 0 0 14px; font-size: 19px; line-height: 1.5; color: var(--cp-text-soft); max-width: 90ch; }
+    .graph-wrap { border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-bg-elevated); overflow: auto; }
+    .graph-wrap:focus-visible { outline: 3px solid var(--cp-accent); outline-offset: 4px; }
+    #workflow-graph { display: block; width: 100%; height: auto; min-height: 250px; }
+    .graph-lane-label { fill: var(--cp-text-soft); font-size: 18px; font-weight: 500; }
+    .graph-separator { stroke: var(--cp-border); stroke-width: 1; }
+    .graph-wire { fill: none; stroke: var(--cp-border-strong); stroke-width: 2; stroke-dasharray: 5 5; }
+    .graph-wire.active { stroke: var(--cp-accent); stroke-width: 3; stroke-dasharray: none; }
+    .graph-node { outline: none; cursor: pointer; }
+    .graph-node rect { fill: var(--cp-surface); stroke: var(--cp-border-strong); stroke-width: 1.5; }
+    .graph-node[data-state="running"] rect { stroke: var(--cp-accent); stroke-width: 3; }
+    .graph-node[data-state="done"] rect { stroke: var(--cp-accent); }
+    .graph-node[data-state="failed"] rect, .graph-node[data-state="error"] rect { stroke: var(--cp-danger); stroke-width: 2.5; }
+    .graph-node[data-state="passed"] rect { stroke: var(--cp-success); stroke-width: 2.5; }
+    .graph-node:focus-visible rect { stroke: var(--cp-accent); stroke-width: 4; }
+    .graph-title { fill: var(--cp-text); font-size: 22px; font-weight: 600; }
+    .graph-kind { fill: var(--cp-text-soft); font-size: 14px; }
+    .graph-status { fill: var(--cp-text-soft); font-size: 16px; }
+    .graph-node[data-state="running"] .graph-status { fill: var(--cp-accent); }
+    .graph-placeholder { fill: var(--cp-text-soft); font-size: 20px; }
+    .graph-branch-label { fill: var(--cp-accent); font-size: 19px; font-weight: 600; }
+    .graph-foot { display: flex; justify-content: space-between; gap: 16px; padding: 12px 16px; border-top: 1px solid var(--cp-border); font-size: 14px; color: var(--cp-text-soft); }
+    .graph-foot .legend { display: flex; gap: 18px; }
+    .legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border: 1px solid var(--cp-border-strong); border-radius: 2px; background: var(--cp-surface); }
+    .legend .agent-key::before { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+    #twist-banner { padding: 15px 20px; margin-top: 16px; border: 1px solid var(--cp-accent); border-radius: .625rem; background: var(--cp-accent-soft); }
+    #twist-banner strong { font-size: 21px; }
+    #twist-banner p { margin: 6px 0 0; color: var(--cp-text-soft); font-size: 16px; line-height: 1.5; }
+    .results { display: grid; grid-template-columns: 1.15fr 1fr; gap: 36px; padding-top: 24px; }
+    .result-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+    .result-heading span { color: var(--cp-text-soft); font-size: 14px; }
+    .outcomes { display: flex; gap: 32px; border-bottom: 1px solid var(--cp-border); padding-bottom: 20px; }
+    .outcome { flex: 1; min-width: 0; }
+    .outcome .number { font-size: 38px; font-weight: 650; letter-spacing: -.035em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .outcome .label { font-size: 15px; color: var(--cp-text-soft); margin-top: 6px; }
+    .outcome .comparison { font-size: 14px; margin-top: 6px; color: var(--cp-text-soft); }
+    #evidence-feed { padding: 12px 0 0; margin: 0; list-style: none; display: grid; gap: 10px; }
+    #evidence-feed li { font-size: 16px; line-height: 1.5; display: grid; grid-template-columns: 112px 1fr; gap: 12px; }
+    #evidence-feed code { font-size: 13px; color: var(--cp-text-soft); padding-top: 3px; }
+    .checks { display: grid; gap: 0; border-top: 1px solid var(--cp-border); }
+    .check { display: flex; align-items: center; gap: 16px; padding: 15px 0; border-bottom: 1px solid var(--cp-border); }
+    .check-status { width: 54px; flex-shrink: 0; font-size: 13px; font-weight: 700; padding: 6px 0; text-align: center; border: 1px solid var(--cp-border-strong); border-radius: 5px; }
+    .check-status[data-result="pass"] { border-color: var(--cp-success); }
+    .check-status[data-result="fail"] { border-color: var(--cp-danger); }
+    .check-name { font-weight: 600; font-size: 17px; }
+    .check-detail { font-size: 14px; color: var(--cp-text-soft); margin-top: 3px; }
+    #approval-panel { margin-top: 18px; padding: 20px; border: 1px solid var(--cp-accent); border-radius: 16px; background: var(--cp-accent-soft); }
+    #approval-panel p { font-size: 16px; line-height: 1.5; margin: 8px 0 16px; color: var(--cp-text-soft); }
+    .approval-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    #native-panel { padding: 20px; margin: 20px 0 0; border: 1px solid var(--cp-border-strong); border-radius: 16px; background: var(--cp-surface); }
+    #native-panel h2 { font-size: 22px; }
+    #native-panel p { font-size: 16px; line-height: 1.6; max-width: 88ch; }
+    .command-row { display: flex; align-items: center; gap: 12px; }
+    .command-row code { padding: 12px 14px; border: 1px solid var(--cp-border); border-radius: .625rem; background: var(--cp-surface-soft); font-size: 15px; overflow-wrap: anywhere; flex: 1; }
+    .native-facts { display: flex; gap: 24px; flex-wrap: wrap; font-size: 14px; color: var(--cp-text-soft); margin-top: 16px; }
+    #notice { margin-top: 18px; padding: 16px 20px; border: 1px solid var(--cp-danger); border-radius: .625rem; background: var(--cp-surface); color: var(--cp-text); line-height: 1.5; }
+    #task-inspector { border: 1px solid var(--cp-border); border-radius: .625rem; padding: 18px 20px; margin-top: 20px; background: var(--cp-surface); }
+    #task-inspector p { margin: 8px 0 0; font-size: 16px; line-height: 1.6; color: var(--cp-text-soft); white-space: pre-line; }
+    #task-inspector button { float: right; padding: 6px 12px; min-height: 36px; }
+    #presenter-cue { margin-top: 18px; border: 1px solid var(--cp-border); border-radius: .625rem; padding: 16px; }
+    #presenter-cue p { margin: 8px 0 0; font-size: 19px; line-height: 1.5; }
+    .details-row { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    details { border-top: 1px solid var(--cp-border); padding: 16px 0; }
+    summary { font-size: 16px; cursor: pointer; font-weight: 600; padding: 4px 0; }
+    details p, details li { line-height: 1.6; color: var(--cp-text-soft); font-size: 15px; }
+    details ol { padding-left: 22px; }
+    pre { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: .625rem; font-size: 13px; line-height: 1.6; padding: 18px; max-height: 480px; overflow: auto; }
+    .seed-control { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 15px; }
+    .seed-control input { width: 140px; }
+    footer { display: flex; justify-content: space-between; gap: 24px; padding-top: 20px; margin-top: 8px; border-top: 1px solid var(--cp-border); font-size: 13px; line-height: 1.6; color: var(--cp-text-soft); }
+    footer a { color: var(--cp-text-soft); }
+    html[data-stage="true"] .shell { max-width: none; padding: 16px 28px 12px; }
+    html[data-stage="true"] .intro { padding: 18px 0; }
+    html[data-stage="true"] h1 { font-size: 54px; }
+    html[data-stage="true"] .intro p { display: none; }
+    html[data-stage="true"] .details-row, html[data-stage="true"] footer { display: none; }
+    html[data-stage="true"] .truth-strip { font-size: 16px; }
+    html[data-stage="true"] .runbar { padding: 16px 0; }
+    html[data-stage="true"] .results { padding-top: 16px; }
+    @media (min-width: 1101px) {
+      html[data-stage="true"] .intro { position: absolute; top: 16px; right: 340px; padding: 0; }
+      html[data-stage="true"] .intro > div:first-child { display: none; }
+      html[data-stage="true"] .truth-strip { margin-top: 12px; padding: 8px 16px; }
+      html[data-stage="true"] .runbar { padding: 12px 0; }
+      html[data-stage="true"] .graph-header { padding: 12px 0 8px; }
+      html[data-stage="true"] .graph-foot { display: none; }
+      html[data-stage="true"] #twist-banner { padding: 10px 16px; margin-top: 10px; }
+      html[data-stage="true"] #twist-banner p { display: none; }
+      html[data-stage="true"] #evidence-feed { display: none; }
+      html[data-stage="true"] .result-heading { margin-bottom: 8px; }
+      html[data-stage="true"] .check { padding: 7px 0; }
+      html[data-stage="true"] .check-name { font-size: 18px; }
+      html[data-stage="true"] .check-detail { display: none; }
+      html[data-stage="true"] .outcome .comparison { font-size: 16px; }
+      html[data-stage="true"] .pace { font-size: 16px; }
+      html[data-stage="true"] .run-state { font-size: 18px; }
+      html[data-stage="true"] .outcomes { padding-bottom: 12px; }
+      html[data-stage="true"] #approval-panel { padding: 0; margin-top: 12px; border: 0; background: none; }
+      html[data-stage="true"] #approval-panel h2, html[data-stage="true"] #approval-panel p { display: none; }
+      html[data-stage="true"][data-native-connected="true"] #approval-panel p { display: block; font-size: 16px; margin: 4px 0 8px; }
+      html[data-stage="true"][data-native-connected="true"]:not([data-native-setup="true"]) #native-panel { display: none; }
+      html[data-stage="true"] #flow-summary { margin-bottom: 6px; font-size: 18px; }
+    }
+    [hidden] { display: none !important; }
+    @media (min-width: 1800px) {
+      .scenario-choice { font-size: 19px; }
+      .truth-strip { font-size: 17px; }
+      .check-name { font-size: 20px; }
+      #evidence-feed li { font-size: 19px; }
+      .outcome .label { font-size: 17px; }
+    }
+    @media (max-width: 1100px) {
+      .shell { padding: 20px 24px 28px; }
+      .intro { display: block; }
+      .mode-control { display: inline-flex; margin-top: 20px; }
+      .runbar { display: block; }
+      .transport { justify-content: flex-start; margin-top: 18px; }
+      #workflow-graph { min-width: 880px; }
+      .results { gap: 24px; }
+    }
+    @media (max-width: 680px) {
+      .shell, html[data-stage="true"] .shell { padding: 16px; }
+      .brand { font-size: 20px; }
+      .topbar { align-items: flex-start; gap: 12px; }
+      .top-actions { flex-wrap: wrap; justify-content: flex-end; max-width: 140px; }
+      .top-actions button { min-height: 36px; padding: 6px 10px; font-size: 12px; }
+      h1, html[data-stage="true"] h1 { font-size: 42px; }
+      .intro p { font-size: 17px; }
+      .mode-control { width: 100%; }
+      .mode-control button { flex: 1; font-size: 13px; padding: 10px 8px; }
+      .truth-strip { display: block; font-size: 14px; }
+      .truth-strip span { display: block; }
+      .truth-strip span:last-child { margin-top: 4px; }
+      .choices { display: grid; grid-template-columns: 1fr 1fr; }
+      .scenario-choice { font-size: 15px; padding: 12px 8px; }
+      .transport { gap: 6px; }
+      #run-button { min-width: 140px; font-size: 17px; }
+      .pace { width: 100%; display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+      .graph-header { align-items: flex-start; }
+      #flow-summary { font-size: 16px; }
+      h2 { font-size: 20px; }
+      .run-state { display: grid; gap: 4px; font-size: 14px; text-align: right; }
+      .graph-foot { display: block; font-size: 13px; }
+      .graph-foot .legend { margin-top: 8px; }
+      .results { grid-template-columns: 1fr; }
+      .outcomes { gap: 16px; }
+      .outcome .number { font-size: 32px; }
+      #evidence-feed li { grid-template-columns: 94px 1fr; font-size: 15px; }
+      #evidence-feed code { font-size: 12px; }
+      .details-row { grid-template-columns: 1fr; gap: 0; }
+      .command-row { display: block; }
+      .command-row code { display: block; font-size: 13px; }
+      .command-row button { margin-top: 10px; }
+      footer { display: block; }
+      footer span { display: block; margin-top: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 6v10c0 6 20 0 20 10M6 16c0 6 20 0 20-10"/><circle cx="6" cy="5" r="3"/><circle cx="26" cy="5" r="3"/><circle cx="26" cy="27" r="3"/></svg>
+        <span>Launch Rescue</span>
+      </div>
+      <div class="top-actions">
+        <button class="quiet" id="cue-toggle" aria-pressed="false">Presenter cues</button>
+        <button class="quiet" id="stage-toggle" aria-pressed="false">Stage view</button>
+        <button class="quiet" id="theme-toggle" aria-label="Switch color theme">Theme</button>
+      </div>
+    </header>
+    <section class="intro" aria-labelledby="mission-title">
+      <div>
+        <h1 id="mission-title">Watch the plan change.</h1>
+        <p>2,500 attendees. A broken ticket launch. Evidence decides which specialists join.</p>
+      </div>
+      <div class="mode-control" role="group" aria-label="Execution mode">
+        <button id="offline-mode" aria-pressed="true">Offline rehearsal</button>
+        <button id="native-mode" aria-pressed="false">Native Copilot</button>
+      </div>
+    </section>
+    <div class="truth-strip" id="truth-strip">
+      <span><strong id="mode-label">OFFLINE REHEARSAL</strong> <span id="mode-description">Real JavaScript workers and checks. No LLM calls.</span></span>
+      <span>Synthetic data. Local draft only. Nothing deployed.</span>
+    </div>
+    <div id="notice" role="alert" hidden></div>
+    <section id="native-panel" hidden aria-labelledby="native-title">
+      <h2 id="native-title">Run the real workflow in Copilot.</h2>
+      <p>This page observes local artifacts; it does not start models. Review the extension, run <code>npm ci</code> once, and check your Copilot sign-in and preview eligibility. The version-matched SDK runner uses <strong>GPT-6.1 Sol / max</strong> and <strong>Sonnet 5.5 / high</strong>.</p>
+      <div class="command-row">
+        <code id="native-command">node .\native\Run-Sdk.mjs --live --pause</code>
+        <button id="copy-command">Copy command</button>
+      </div>
+      <div class="native-facts"><span id="observer-status">Checking local observer…</span><span>Preview + eligible Copilot plan required</span><span>Actual usage: inspect /workflows</span></div>
+      <p>Use <code>--rehearsal --pause</code> for an actual-runtime test without models. The SDK terminal waits for your review at the checkpoint. If you launch the extension in an app/CLI session instead, use that session's <code>/workflows</code> view. Browser approval never resumes native work.</p>
+    </section>
+    <section class="runbar" aria-label="Mission controls">
+      <fieldset id="scenario-controls">
+        <legend>Ask the room: what should break?</legend>
+        <div class="choices">
+          <button class="scenario-choice" data-scenario="retries" aria-pressed="false">Retry storm</button>
+          <button class="scenario-choice" data-scenario="capacity" aria-pressed="false">Room switch</button>
+          <button class="scenario-choice" data-scenario="parallel" aria-pressed="false">Both at once</button>
+          <button class="scenario-choice" data-scenario="mixed" aria-pressed="true">Surprise me</button>
+        </div>
+      </fieldset>
+      <div class="transport">
+        <button class="primary" id="run-button">Run rescue</button>
+        <button id="pause-button" disabled>Pause</button>
+        <button class="quiet" id="reset-button">New run</button>
+        <label class="pace" for="pace-select">Presentation pacing
+          <select id="pace-select"><option value="650">Normal</option><option value="120">Fast</option><option value="0">Instant</option></select>
+        </label>
+      </div>
+    </section>
+    <section aria-labelledby="graph-title">
+      <div class="graph-header">
+        <h2 id="graph-title">The execution graph</h2>
+        <div class="run-state" aria-live="polite"><span class="state-label" id="status-label" data-state="idle">Ready</span><span id="phase-label">Choose a failure</span></div>
+      </div>
+      <p id="flow-summary" role="status">Choose a failure, run the rescue, and follow the evidence from left to right.</p>
+      <div class="graph-wrap" tabindex="0" aria-label="Scrollable execution graph">
+        <svg id="workflow-graph" viewBox="0 0 1540 365" role="group" aria-label="Major workflow stages; select a node to inspect actual execution"></svg>
+        <div class="graph-foot"><span id="graph-caption">Major stages shown. Specialist nodes appear only when evidence requires them.</span><div class="legend"><span>Code + checks</span><span class="agent-key" id="specialist-legend">Local workers</span><span>Human gate</span></div></div>
+      </div>
+      <div id="twist-banner" hidden><strong>Plot twist: 200 seats disappear.</strong><p>The first plan is already built. A failed acceptance check must change the next step.</p></div>
+      <aside id="task-inspector" hidden aria-labelledby="inspector-title"><button id="close-inspector" aria-label="Close task details">Close</button><h2 id="inspector-title">Task details</h2><p id="inspector-detail"></p></aside>
+      <aside id="presenter-cue" hidden><strong>Say this</strong><p id="cue-text">“Which failure should we trigger? Show of hands. We won't choose the agents; the evidence will.”</p></aside>
+    </section>
+    <section class="results" aria-label="Measured evidence and acceptance checks">
+      <div>
+        <div class="result-heading"><h2>Measured synthetic outcomes</h2><span id="measurement-label">Waiting for execution</span></div>
+        <div class="outcomes">
+          <div class="outcome"><div class="number" id="duplicate-count">—</div><div class="label">Duplicate outcomes</div><div class="comparison" id="duplicate-before">No fixture evaluated yet</div></div>
+          <div class="outcome"><div class="number" id="oversold-count">—</div><div class="label">Seats over capacity</div><div class="comparison" id="oversold-before">No fixture evaluated yet</div></div>
+          <div class="outcome"><div class="number" id="confirmed-count">—</div><div class="label">Unique confirmations</div><div class="comparison" id="waitlist-count">No fixture evaluated yet</div></div>
+        </div>
+        <ul id="evidence-feed" aria-label="Latest evidence"><li><code>WAITING</code><span>The graph is driven by execution events, not a prerecorded animation.</span></li></ul>
+      </div>
+      <div>
+        <div class="result-heading"><h2>The acceptance gate</h2><span id="checks-total">0 / 3 run</span></div>
+        <div class="checks" id="checks-list"></div>
+        <div id="approval-panel" hidden>
+          <h2 id="approval-title">A human still decides.</h2>
+          <p id="approval-detail">The checks and independent review pass. Approve only this synthetic local draft, or keep it on hold.</p>
+          <div class="approval-actions">
+            <button class="primary" id="approve-button">Approve local draft</button>
+            <button id="hold-button">Keep on hold</button>
+            <button id="download-button">Download evidence</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="details-row" aria-label="Technical details and presenter help">
+      <details><summary>Read the actual workflow source</summary><p>This is the source bundled into both the standalone runner and the native extension. Rehearsal takes the JavaScript branch; live mode calls <code>ctx.agent</code>.</p><pre id="workflow-source"></pre></details>
+      <details><summary>How to present this demo</summary>
+        <ol><li>Ask the audience to choose a failure. Run “Both at once” to show parallel specialists.</li><li>Choose “Surprise me” for the new-evidence moment. Point to the failed capacity check and new branch.</li><li>Pause, explain the saved steps, then resume. At the review gate, inspect evidence before approving.</li><li>Use Native Copilot for actual model calls. If unavailable, say “This is the offline rehearsal: real checks, no LLM.”</li></ol>
+        <p>Keyboard: <strong>S</strong> run/resume, <strong>P</strong> pause, <strong>V</strong> stage view. Shortcuts do not run while editing a field. Pacing includes intentional presentation delays; this is not a performance benchmark.</p>
+        <label class="seed-control" for="seed-input">Synthetic fixture seed <input id="seed-input" type="number" value="42" min="1" max="9999999" step="1"></label>
+      </details>
+    </section>
+    <footer><span>GitHub Copilot dynamic workflows are public preview. Availability and APIs may change.<br><a href="https://docs.github.com/en/copilot/concepts/agents/dynamic-workflows" target="_blank" rel="noreferrer">Official concepts</a> · <a href="https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-dynamic-workflows" target="_blank" rel="noreferrer">Official how-to</a> · <a href="https://github.com/github/copilot-sdk/blob/v1.0.19/nodejs/docs/workflows.md" target="_blank" rel="noreferrer">SDK API</a></span><span>Built for a 2,500-person room.<br>Evidence → bounded repair → independent challenge → human checkpoint.</span></footer>
+  </main>
+  <noscript>This demo requires JavaScript. All computations are local in offline rehearsal mode.</noscript>
+  <script>"use strict";
+(() => {
+  // demo/core.ts
+  var VERSION = "launch-rescue-v2";
+  var ATTENDEES = 2500;
+  var ANALYST = { model: "gpt-6.1-sol", reasoningEffort: "max", agent: "launch-analyst" };
+  var REVIEWER = { model: "claude-sonnet-5.5", reasoningEffort: "high", agent: "launch-reviewer" };
+  var OUTPUT_CONTRACT = "rationale must be plain text with 12 to 1200 characters (aim for at most 600). evidenceIds must contain at least one unique ID from the supplied evidence, with no repeated or unknown IDs.";
+  var WorkflowError = class extends Error {
+    constructor(message) {
+      super(message);
+      this.name = "WorkflowError";
+    }
+  };
+  function isRecord(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+  function isJsonValue(value, depth = 0) {
+    if (depth > 30) return false;
+    if (value === null || typeof value === "string" || typeof value === "boolean") return true;
+    if (typeof value === "number") return Number.isFinite(value);
+    if (Array.isArray(value)) return value.every((item) => isJsonValue(item, depth + 1));
+    return isRecord(value) && Object.values(value).every((item) => isJsonValue(item, depth + 1));
+  }
+  function validateArgs(value) {
+    if (!isRecord(value)) throw new WorkflowError("Workflow inputs must be a JSON object.");
+    const allowed = /* @__PURE__ */ new Set(["scenario", "mode", "seed", "pauseForApproval"]);
+    if (Object.keys(value).some((key) => !allowed.has(key))) {
+      throw new WorkflowError("Unknown workflow input. Allowed: scenario, mode, seed, pauseForApproval.");
+    }
+    const scenario2 = value.scenario ?? "mixed";
+    const mode2 = value.mode ?? "rehearsal";
+    const seed = value.seed ?? 42;
+    const pauseForApproval = value.pauseForApproval ?? true;
+    if (scenario2 !== "retries" && scenario2 !== "capacity" && scenario2 !== "parallel" && scenario2 !== "mixed") {
+      throw new WorkflowError("Choose retries, capacity, parallel, or mixed.");
+    }
+    if (mode2 !== "rehearsal" && mode2 !== "live") throw new WorkflowError("Mode must be rehearsal or live.");
+    if (typeof seed !== "number" || !Number.isSafeInteger(seed) || seed < 1 || seed > 9999999) {
+      throw new WorkflowError("Seed must be an integer from 1 to 9999999.");
+    }
+    if (typeof pauseForApproval !== "boolean") throw new WorkflowError("pauseForApproval must be boolean.");
+    return { scenario: scenario2, mode: mode2, seed, pauseForApproval };
+  }
+  function makeFixture(args, roomChanged = false) {
+    let state = args.seed >>> 0;
+    const random = () => {
+      state = Math.imul(1664525, state) + 1013904223 >>> 0;
+      return state / 4294967296;
+    };
+    const tickets = Array.from({ length: ATTENDEES }, (_, index) => `ATT-${String(index + 1).padStart(4, "0")}`);
+    for (let index = tickets.length - 1; index > 0; index--) {
+      const other = Math.floor(random() * (index + 1));
+      const left = tickets[index];
+      const right = tickets[other];
+      if (left === void 0 || right === void 0) throw new WorkflowError("Synthetic fixture construction failed.");
+      tickets[index] = right;
+      tickets[other] = left;
+    }
+    const requests = [];
+    tickets.forEach((ticket, index) => {
+      requests.push({ ticket });
+      if (args.scenario !== "capacity" && index % 5 === 0) requests.push({ ticket });
+    });
+    const reduced = args.scenario === "capacity" || args.scenario === "parallel" || roomChanged;
+    return {
+      tickets,
+      requests,
+      rooms: [
+        { id: "hall", label: "Main hall", declaredCapacity: 1800, capacity: reduced ? 1600 : 1800 },
+        { id: "studio", label: "Studio", declaredCapacity: 700, capacity: 700 }
+      ]
+    };
+  }
+  function allocate(fixture, policy) {
+    const seen = /* @__PURE__ */ new Set();
+    const used = new Map(fixture.rooms.map((room) => [room.id, 0]));
+    const outcomes = [];
+    let ignoredRetries = 0;
+    const hall = fixture.rooms[0];
+    const studio = fixture.rooms[1];
+    if (!hall || !studio) throw new WorkflowError("The synthetic fixture needs both rooms.");
+    for (const request of fixture.requests) {
+      if (policy.dedupe && seen.has(request.ticket)) {
+        ignoredRetries++;
+        continue;
+      }
+      seen.add(request.ticket);
+      let room;
+      if (policy.capacity) {
+        room = fixture.rooms.find((candidate) => (used.get(candidate.id) ?? 0) < candidate.capacity);
+      } else {
+        room = (used.get(hall.id) ?? 0) < hall.declaredCapacity ? hall : studio;
+      }
+      if (room) used.set(room.id, (used.get(room.id) ?? 0) + 1);
+      outcomes.push({ ticket: request.ticket, room: room?.id ?? null });
+    }
+    return { outcomes, ignoredRetries };
+  }
+  function evaluate(fixture, policy) {
+    const { outcomes, ignoredRetries } = allocate(fixture, policy);
+    const counts = /* @__PURE__ */ new Map();
+    const confirmedTickets = /* @__PURE__ */ new Set();
+    const waitlistedTickets = /* @__PURE__ */ new Set();
+    const occupancy = fixture.rooms.map((room) => ({ room: room.label, used: 0, capacity: room.capacity }));
+    let confirmed = 0;
+    for (const outcome of outcomes) {
+      counts.set(outcome.ticket, (counts.get(outcome.ticket) ?? 0) + 1);
+      if (outcome.room !== null) {
+        confirmed++;
+        confirmedTickets.add(outcome.ticket);
+        const index = fixture.rooms.findIndex((room) => room.id === outcome.room);
+        const occupied = occupancy[index];
+        if (!occupied) throw new WorkflowError("Allocator returned an unknown room.");
+        occupied.used++;
+      } else {
+        waitlistedTickets.add(outcome.ticket);
+      }
+    }
+    const duplicateOutcomes = [...counts.values()].reduce((sum, count) => sum + Math.max(0, count - 1), 0);
+    const oversoldSeats = occupancy.reduce((sum, room) => sum + Math.max(0, room.used - room.capacity), 0);
+    const missingAttendees = fixture.tickets.filter((ticket) => !counts.has(ticket)).length;
+    return {
+      requestCount: fixture.requests.length,
+      confirmed,
+      uniqueConfirmed: confirmedTickets.size,
+      waitlisted: waitlistedTickets.size,
+      ignoredRetries,
+      duplicateOutcomes,
+      oversoldSeats,
+      missingAttendees,
+      occupancy,
+      checks: [
+        { id: "C-UNIQUE", title: "One outcome per attendee", passed: duplicateOutcomes === 0, detail: `${duplicateOutcomes} duplicate outcomes` },
+        { id: "C-CAPACITY", title: "Never exceed room capacity", passed: oversoldSeats === 0, detail: `${oversoldSeats} seats over capacity` },
+        { id: "C-COVERAGE", title: "No attendee disappears", passed: missingAttendees === 0, detail: `${missingAttendees} missing attendees` }
+      ]
+    };
+  }
+  function inspectRequests(fixture) {
+    const distinct = new Set(fixture.requests.map((request) => request.ticket)).size;
+    const count = fixture.requests.length - distinct;
+    return { id: "E-RETRY", count, summary: `${fixture.requests.length} requests represent ${distinct} attendees; ${count} are retries.` };
+  }
+  function inspectInventory(fixture) {
+    const count = fixture.rooms.reduce((sum, room) => sum + Math.max(0, room.declaredCapacity - room.capacity), 0);
+    return { id: "E-INVENTORY", count, summary: `Published inventory exceeds current room capacity by ${count} seats.` };
+  }
+  function validateEvidence(value) {
+    if (!isRecord(value) || typeof value.id !== "string" || typeof value.summary !== "string" || typeof value.count !== "number" || !Number.isSafeInteger(value.count) || value.count < 0) {
+      throw new WorkflowError("Saved evidence is invalid. Start a fresh run.");
+    }
+    return { id: value.id, summary: value.summary, count: value.count };
+  }
+  function validateEvaluation(value) {
+    if (!isRecord(value)) throw new WorkflowError("Saved verification is not an object.");
+    const fields = [
+      "requestCount",
+      "confirmed",
+      "uniqueConfirmed",
+      "waitlisted",
+      "ignoredRetries",
+      "duplicateOutcomes",
+      "oversoldSeats",
+      "missingAttendees"
+    ];
+    for (const field of fields) {
+      if (typeof value[field] !== "number" || !Number.isSafeInteger(value[field]) || value[field] < 0) {
+        throw new WorkflowError(`Invalid saved verification field: ${field}.`);
+      }
+    }
+    if (!Array.isArray(value.checks) || value.checks.length !== 3 || !Array.isArray(value.occupancy) || value.occupancy.length !== 2) {
+      throw new WorkflowError("Saved verification has an invalid shape.");
+    }
+    const checks = value.checks.map((check) => {
+      if (!isRecord(check) || typeof check.id !== "string" || typeof check.title !== "string" || typeof check.passed !== "boolean" || typeof check.detail !== "string") {
+        throw new WorkflowError("Invalid saved contract check.");
+      }
+      return { id: check.id, title: check.title, passed: check.passed, detail: check.detail };
+    });
+    const occupancy = value.occupancy.map((room) => {
+      if (!isRecord(room) || typeof room.room !== "string" || typeof room.used !== "number" || typeof room.capacity !== "number" || !Number.isSafeInteger(room.used) || !Number.isSafeInteger(room.capacity) || room.used < 0 || room.capacity < 0) throw new WorkflowError("Invalid saved occupancy.");
+      return { room: room.room, used: room.used, capacity: room.capacity };
+    });
+    const expected = [
+      ["C-UNIQUE", value.duplicateOutcomes === 0],
+      ["C-CAPACITY", value.oversoldSeats === 0],
+      ["C-COVERAGE", value.missingAttendees === 0]
+    ];
+    if (checks.some((check, index) => check.id !== expected[index]?.[0] || check.passed !== expected[index]?.[1]) || occupancy.reduce((sum, room) => sum + room.used, 0) !== value.confirmed || occupancy.reduce((sum, room) => sum + Math.max(0, room.used - room.capacity), 0) !== value.oversoldSeats) {
+      throw new WorkflowError("Saved check flags do not agree with measured outcomes.");
+    }
+    return {
+      requestCount: Number(value.requestCount),
+      confirmed: Number(value.confirmed),
+      uniqueConfirmed: Number(value.uniqueConfirmed),
+      waitlisted: Number(value.waitlisted),
+      ignoredRetries: Number(value.ignoredRetries),
+      duplicateOutcomes: Number(value.duplicateOutcomes),
+      oversoldSeats: Number(value.oversoldSeats),
+      missingAttendees: Number(value.missingAttendees),
+      occupancy,
+      checks
+    };
+  }
+  function validateExplanation(value, evidenceIds) {
+    if (!isRecord(value) || typeof value.rationale !== "string" || value.rationale.trim().length < 12 || value.rationale.length > 1200 || !Array.isArray(value.evidenceIds) || value.evidenceIds.length < 1 || value.evidenceIds.length > evidenceIds.length) {
+      throw new WorkflowError("Agent explanation is missing or outside the demo's semantic constraints.");
+    }
+    const ids = [];
+    for (const id of value.evidenceIds) {
+      if (typeof id !== "string" || !evidenceIds.includes(id) || ids.includes(id)) {
+        throw new WorkflowError("Agent cited unknown or duplicate evidence. Candidate held.");
+      }
+      ids.push(id);
+    }
+    return { rationale: value.rationale.trim(), evidenceIds: ids };
+  }
+  function validateProposal(value, repair, evidence) {
+    const explanation = validateExplanation(value, evidence.map((item) => item.id));
+    if (!isRecord(value) || value.repair !== repair) {
+      throw new WorkflowError(`Specialist must return the bounded ${repair} repair; candidate held.`);
+    }
+    const required = repair === "dedupe" ? "E-RETRY" : "E-INVENTORY";
+    if (!explanation.evidenceIds.includes(required)) throw new WorkflowError("Specialist did not cite its required evidence.");
+    return { repair, ...explanation };
+  }
+  function scopedEvidence(repair, evidence) {
+    const required = repair === "dedupe" ? "E-RETRY" : "E-INVENTORY";
+    const snapshot = evidence.filter((item) => item.id === required).map((item) => ({ ...item }));
+    if (snapshot.length !== 1 || snapshot[0]?.count === 0) {
+      throw new WorkflowError("A specialist requires exactly one actionable evidence snapshot.");
+    }
+    return snapshot;
+  }
+  function validateRepairRecord(value, repair, round, expected) {
+    if (!isRecord(value) || value.round !== round || !Array.isArray(value.evidenceSnapshot)) {
+      throw new WorkflowError("Saved repair is missing its observation round or evidence snapshot.");
+    }
+    const snapshot = value.evidenceSnapshot.map(validateEvidence);
+    const required = scopedEvidence(repair, expected);
+    if (snapshot.length !== 1 || snapshot[0]?.id !== required[0]?.id || snapshot[0]?.count !== required[0]?.count || snapshot[0]?.summary !== required[0]?.summary) {
+      throw new WorkflowError("Saved repair evidence does not match its observation round.");
+    }
+    return { ...validateProposal(value, repair, snapshot), round, evidenceSnapshot: snapshot };
+  }
+  function validateVerdict(value, evidence) {
+    const explanation = validateExplanation(value, evidence.map((item) => item.id));
+    if (!isRecord(value) || value.verdict !== "accept" && value.verdict !== "reject") {
+      throw new WorkflowError("Reviewer returned no valid accept/reject verdict. Candidate held.");
+    }
+    return { verdict: value.verdict, ...explanation };
+  }
+  function proposalSchema(repair) {
+    return {
+      type: "object",
+      required: ["repair", "rationale", "evidenceIds"],
+      properties: {
+        repair: { type: "string", const: repair },
+        rationale: { type: "string" },
+        evidenceIds: { type: "array", items: { type: "string" } }
+      }
+    };
+  }
+  var VERDICT_SCHEMA = {
+    type: "object",
+    required: ["verdict", "rationale", "evidenceIds"],
+    properties: {
+      verdict: { type: "string", enum: ["accept", "reject"] },
+      rationale: { type: "string" },
+      evidenceIds: { type: "array", items: { type: "string" } }
+    }
+  };
+  function localProposal(repair, evidence) {
+    const id = repair === "dedupe" ? "E-RETRY" : "E-INVENTORY";
+    const finding = evidence.find((item) => item.id === id);
+    if (!finding || finding.count <= 0) throw new WorkflowError("No evidence supports this specialist branch.");
+    return {
+      repair,
+      rationale: repair === "dedupe" ? `Use ticket identity as the idempotency key: ${finding.count} retry requests must reuse the first decision.` : `Allocate against current inventory, not the published map: ${finding.count} unavailable seats must become a waitlist.`,
+      evidenceIds: [id]
+    };
+  }
+  function independentLedgerReview(fixture, policy, evidence) {
+    const { outcomes } = allocate(fixture, policy);
+    const remaining = new Map(fixture.rooms.map((room) => [room.id, room.capacity]));
+    const ledger = /* @__PURE__ */ new Set();
+    let valid = true;
+    for (const outcome of outcomes) {
+      if (ledger.has(outcome.ticket)) valid = false;
+      ledger.add(outcome.ticket);
+      if (outcome.room !== null) {
+        const available = remaining.get(outcome.room);
+        if (available === void 0 || available < 1) valid = false;
+        else remaining.set(outcome.room, available - 1);
+      }
+    }
+    if (ledger.size !== ATTENDEES) valid = false;
+    return {
+      verdict: valid ? "accept" : "reject",
+      rationale: valid ? "An independent ledger walk found one decision per attendee, respected each room's current capacity, and accounted for everyone." : "The independent ledger walk found a duplicate, an unavailable seat, or a missing attendee.",
+      evidenceIds: evidence.map((item) => item.id)
+    };
+  }
+  function abortIfNeeded(ctx) {
+    if (ctx.signal.aborted) throw ctx.signal.reason ?? new WorkflowError("Run interrupted.");
+  }
+  async function runLaunchRescue(ctx, emit2) {
+    const args = validateArgs(ctx.args);
+    const initialFixture = makeFixture(args);
+    const policy = { dedupe: false, capacity: false };
+    const proposals = [];
+    const kind = args.mode === "live" ? "agent" : "worker";
+    const phase2 = async (title) => {
+      abortIfNeeded(ctx);
+      ctx.phase(title);
+      await emit2({ type: "phase", id: `phase:${title}`, title });
+    };
+    const task = async (id, title, taskKind, dependsOn, producer, detail = "") => {
+      abortIfNeeded(ctx);
+      await emit2({ type: "task", id, title, kind: taskKind, state: "running", dependsOn, detail });
+      let value;
+      try {
+        value = await ctx.step(`${VERSION}:${id}`, producer);
+      } catch (error) {
+        if (!ctx.signal.aborted) {
+          const message = error instanceof Error ? error.message : String(error);
+          ctx.log(`Failed ${title}: ${message}`);
+          await emit2({ type: "task", id, title, kind: taskKind, state: "error", dependsOn, detail: message });
+        }
+        throw error;
+      }
+      abortIfNeeded(ctx);
+      await emit2({ type: "task", id, title, kind: taskKind, state: "done", dependsOn, detail });
+      return value;
+    };
+    const specialist = async (repair, evidence2, round, dependency) => {
+      const id = `${repair}-specialist-${round}`;
+      const title = repair === "dedupe" ? "Retry specialist" : "Capacity specialist";
+      const snapshot = scopedEvidence(repair, evidence2);
+      const detail = args.mode === "live" ? "GPT-6.1 Sol / max" : "Local JavaScript worker / no LLM";
+      const value = await task(id, title, kind, [dependency], async () => {
+        if (args.mode === "rehearsal") return {
+          ...localProposal(repair, snapshot),
+          round,
+          evidenceSnapshot: snapshot
+        };
+        const prompt = [
+          "Analyze this synthetic conference-launch fixture. Use no tools and do not delegate.",
+          `Observation round: ${round}. You see only your specialist's immutable evidence snapshot.`,
+          `Your bounded repair is ${repair}. Return repair, rationale, and evidenceIds.`,
+          repair === "dedupe" ? "Reuse the first decision by ticket ID." : "Use current room inventory and waitlist excess attendees.",
+          "Discuss only your supplied evidence. Do not speculate about other components or claim tests pass.",
+          "Deterministic code verifies the choice. Cite only supplied evidence IDs.",
+          OUTPUT_CONTRACT,
+          `Evidence: ${JSON.stringify(snapshot)}`
+        ].join("\n");
+        const options = { ...ANALYST, label: id, schema: proposalSchema(repair) };
+        const result = await ctx.agent(prompt, options);
+        if (result === null) throw new WorkflowError(`${title} returned no usable result. Retry or use the labeled rehearsal.`);
+        return { ...validateProposal(result, repair, snapshot), round, evidenceSnapshot: snapshot };
+      }, detail);
+      return validateRepairRecord(value, repair, round, snapshot);
+    };
+    await phase2("Observe");
+    await task("capture", "Capture synthetic launch", "code", [], () => ({
+      scenario: args.scenario,
+      seed: args.seed,
+      attendees: ATTENDEES,
+      requests: initialFixture.requests.length
+    }), "2,500 attendees / synthetic fixture");
+    const before2 = validateEvaluation(await task(
+      "baseline",
+      "Reproduce the failure",
+      "code",
+      ["capture"],
+      () => evaluate(initialFixture, policy),
+      "Execute the buggy allocator and three contract checks"
+    ));
+    await phase2("Diagnose");
+    const scans = await ctx.parallel([
+      () => task("scan-retries", "Inspect request identities", "code", ["baseline"], () => inspectRequests(initialFixture)),
+      () => task("scan-inventory", "Audit room inventory", "code", ["baseline"], () => inspectInventory(initialFixture))
+    ]);
+    if (scans.some((scan) => scan === null) || scans.length !== 2) {
+      throw new WorkflowError("Evidence collection failed. No specialist or release may proceed.");
+    }
+    const evidence = scans.map(validateEvidence);
+    await emit2({
+      type: "evidence",
+      id: "initial-evidence",
+      title: "Evidence decides who joins",
+      evidence: evidence.map((item) => ({ ...item })),
+      evaluation: before2
+    });
+    const needed = [];
+    if ((evidence.find((item) => item.id === "E-RETRY")?.count ?? 0) > 0) needed.push("dedupe");
+    if ((evidence.find((item) => item.id === "E-INVENTORY")?.count ?? 0) > 0) needed.push("capacity");
+    if (needed.length === 0) throw new WorkflowError("The selected synthetic incident contains no actionable evidence.");
+    await phase2("Repair");
+    for (const repair of needed) {
+      await emit2({
+        type: "branch",
+        id: `branch:${repair}:1`,
+        title: `Add ${repair === "dedupe" ? "retry" : "capacity"} specialist`,
+        repair,
+        reason: "Observed evidence, not a fixed list of agents."
+      });
+    }
+    const initialProposals = await ctx.parallel(needed.map((repair) => () => specialist(
+      repair,
+      evidence,
+      1,
+      repair === "dedupe" ? "scan-retries" : "scan-inventory"
+    )));
+    if (initialProposals.some((proposal) => proposal === null)) {
+      throw new WorkflowError("A required specialist failed. Candidate held; no silent substitute.");
+    }
+    initialProposals.forEach((proposal, index) => {
+      const repair = needed[index];
+      if (repair === void 0) throw new WorkflowError("Specialist result has no matching branch.");
+      const valid = validateRepairRecord(proposal, repair, 1, evidence);
+      proposals.push(valid);
+      policy[valid.repair] = true;
+    });
+    await task(
+      "candidate-1",
+      "Assemble bounded repair",
+      "code",
+      needed.map((repair) => `${repair}-specialist-1`),
+      () => ({ ...policy }),
+      "No generated code is executed"
+    );
+    await phase2("Verify");
+    let fixture = initialFixture;
+    if (args.scenario === "mixed") {
+      await task(
+        "room-change",
+        "Room inventory changes",
+        "code",
+        ["candidate-1"],
+        () => ({ removedSeats: 200, room: "Main hall" }),
+        "Synthetic surprise after the first plan"
+      );
+      fixture = makeFixture(args, true);
+      await emit2({
+        type: "twist",
+        id: "twist",
+        title: "Plot twist: 200 seats disappear",
+        detail: "A new room map arrives after planning. The old candidate must face the new evidence."
+      });
+    }
+    let after = validateEvaluation(await task(
+      "verify-1",
+      "Run acceptance checks",
+      "code",
+      [args.scenario === "mixed" ? "room-change" : "candidate-1"],
+      () => evaluate(fixture, policy)
+    ));
+    let verificationRounds = 1;
+    await emit2({ type: "verification", id: "verification-1", title: "Code, not confidence, decides", evaluation: after, round: 1 });
+    if (!after.checks.every((check) => check.passed)) {
+      if (args.scenario !== "mixed" || after.duplicateOutcomes !== 0 || after.oversoldSeats !== 200) {
+        throw new WorkflowError("Candidate failed an unexpected acceptance check. Release held.");
+      }
+      const updatedInventory = validateEvidence(await task(
+        "rescan-inventory",
+        "Read the new inventory",
+        "code",
+        ["verify-1"],
+        () => inspectInventory(fixture)
+      ));
+      const inventoryIndex = evidence.findIndex((item) => item.id === updatedInventory.id);
+      if (inventoryIndex < 0) throw new WorkflowError("Updated inventory has no original evidence ID.");
+      evidence[inventoryIndex] = updatedInventory;
+      await emit2({
+        type: "branch",
+        id: "branch:capacity:2",
+        title: "Failed check adds a new specialist",
+        repair: "capacity",
+        reason: "C-CAPACITY failed against the changed inventory. Replan only this branch."
+      });
+      await phase2("Adapt");
+      const repair = await specialist("capacity", evidence, 2, "rescan-inventory");
+      proposals.push(repair);
+      policy.capacity = true;
+      await task(
+        "candidate-2",
+        "Revise the candidate",
+        "code",
+        ["capacity-specialist-2"],
+        () => ({ ...policy }),
+        "Keep the verified retry repair; add current-inventory allocation"
+      );
+      await phase2("Verify");
+      after = validateEvaluation(await task(
+        "verify-2",
+        "Re-run acceptance checks",
+        "code",
+        ["candidate-2"],
+        () => evaluate(fixture, policy)
+      ));
+      verificationRounds = 2;
+      await emit2({ type: "verification", id: "verification-2", title: "The adapted candidate passes", evaluation: after, round: 2 });
+    }
+    if (!after.checks.every((check) => check.passed)) throw new WorkflowError("Revised candidate failed. Release held.");
+    await phase2("Challenge");
+    const reviewerDependency = verificationRounds === 2 ? "verify-2" : "verify-1";
+    const verdictValue = await task("reviewer", "Independent challenge", kind, [reviewerDependency], async () => {
+      if (args.mode === "rehearsal") return independentLedgerReview(fixture, policy, evidence);
+      const prompt = [
+        "Independently challenge this synthetic local release candidate. Use no tools or delegation.",
+        "Return verdict (accept/reject), rationale, evidenceIds. Cite only supplied evidence IDs.",
+        OUTPUT_CONTRACT,
+        "Reject if any contract check fails or the proposed policy is inconsistent with the evidence.",
+        "Every repair includes its observation round and immutable evidenceSnapshot.",
+        "Judge historical explanations against their own snapshots and the final policy against current evidence.",
+        args.scenario === "mixed" ? "Inventory deliberately changed after round 1. Round 2 corrected that new fact; do not treat a correctly scoped round-1 observation as a contradiction." : "Both the policy and explanations must be consistent with the supplied observations.",
+        "Do not claim production readiness, deployment, performance, or real ticket allocation.",
+        `Current evidence: ${JSON.stringify(evidence)}`,
+        `Repairs: ${JSON.stringify(proposals)}`,
+        `Policy: ${JSON.stringify(policy)}`,
+        `Acceptance checks and measured synthetic counts: ${JSON.stringify(after)}`
+      ].join("\n");
+      const result = await ctx.agent(prompt, { ...REVIEWER, label: "independent-review", schema: VERDICT_SCHEMA });
+      if (result === null) throw new WorkflowError("Independent reviewer returned no verdict. Candidate held.");
+      return validateVerdict(result, evidence);
+    }, args.mode === "live" ? "Sonnet 5.5 / high" : "Independent local ledger walk / no LLM");
+    const reviewer = validateVerdict(verdictValue, evidence);
+    if (reviewer.verdict !== "accept") throw new WorkflowError(`Independent reviewer held the candidate: ${reviewer.rationale}`);
+    await phase2("Approve");
+    const report2 = {
+      version: VERSION,
+      runId: ctx.runId,
+      synthetic: true,
+      scenario: args.scenario,
+      mode: args.mode,
+      seed: args.seed,
+      status: "draft",
+      policy: { ...policy },
+      before: before2,
+      after,
+      repairs: proposals,
+      verificationRounds,
+      reviewer,
+      note: "Synthetic local release candidate only. No deployment, real tickets, purchases, or remote writes."
+    };
+    await task(
+      "approval",
+      "Human review checkpoint",
+      "gate",
+      ["reviewer"],
+      () => ({ decision: "review-ready", checksPassed: after.checks.length }),
+      args.pauseForApproval ? "Pause, inspect, then resume the same run" : "Draft-only run; no approval claimed"
+    );
+    await emit2({ type: "ready", id: "ready", report: structuredClone(report2) });
+    ctx.log(`All ${after.checks.length} checks pass. ${after.uniqueConfirmed} confirmed, ${after.waitlisted} waitlisted. Synthetic only.`);
+    if (args.pauseForApproval) {
+      await ctx.pause(`${VERSION}:approve-local-draft`);
+      abortIfNeeded(ctx);
+      report2.status = "approved";
+    }
+    await phase2("Complete");
+    await emit2({ type: "complete", id: "complete", report: structuredClone(report2) });
+    return report2;
+  }
+
+  // demo/local-context.ts
+  var CheckpointPause = class extends Error {
+    constructor() {
+      super("Review checkpoint reached.");
+      this.name = "CheckpointPause";
+    }
+  };
+  var PresenterPause = class extends Error {
+    constructor() {
+      super("Paused by presenter. Saved steps can be resumed.");
+      this.name = "PresenterPause";
+    }
+  };
+  var UserCancel = class extends Error {
+    constructor() {
+      super("Cancelled. Start a new run to continue.");
+      this.name = "UserCancel";
+    }
+  };
+  function newJournal(args, runId = crypto.randomUUID()) {
+    return { version: 1, runId, args, steps: {}, checkpoints: {} };
+  }
+  var LocalContext = class {
+    constructor(journal2, save2 = () => {
+    }, delayMs = 0) {
+      this.journal = journal2;
+      this.save = save2;
+      this.delayMs = delayMs;
+      this.runId = journal2.runId;
+      this.args = journal2.args;
+      this.signal = this.controller.signal;
+      if (this.args.mode !== "rehearsal") {
+        throw new WorkflowError("The standalone runner never calls models. Run native live mode in Copilot.");
+      }
+    }
+    journal;
+    save;
+    delayMs;
+    runId;
+    args;
+    signal;
+    producerCounts = /* @__PURE__ */ new Map();
+    controller = new AbortController();
+    phase(_title) {
+      this.throwIfAborted();
+    }
+    log(_message) {
+      this.throwIfAborted();
+    }
+    pauseNow() {
+      this.controller.abort(new PresenterPause());
+    }
+    cancel() {
+      this.controller.abort(new UserCancel());
+    }
+    throwIfAborted() {
+      if (this.signal.aborted) throw this.signal.reason;
+    }
+    async wait() {
+      this.throwIfAborted();
+      if (this.delayMs <= 0) return;
+      await new Promise((resolve, reject) => {
+        const abort = () => {
+          clearTimeout(timer);
+          reject(this.signal.reason);
+        };
+        const timer = setTimeout(() => {
+          this.signal.removeEventListener("abort", abort);
+          resolve();
+        }, this.delayMs);
+        this.signal.addEventListener("abort", abort, { once: true });
+      });
+      this.throwIfAborted();
+    }
+    async step(key, producer, options) {
+      this.throwIfAborted();
+      if (!options?.volatile && Object.hasOwn(this.journal.steps, key)) {
+        const saved = this.journal.steps[key];
+        if (saved === void 0) throw new WorkflowError("A saved step has no JSON value.");
+        return structuredClone(saved);
+      }
+      await this.wait();
+      const result = await producer();
+      this.throwIfAborted();
+      if (result === void 0) throw new WorkflowError("A step returned undefined instead of JSON.");
+      const copy = JSON.parse(JSON.stringify(result));
+      this.producerCounts.set(key, (this.producerCounts.get(key) ?? 0) + 1);
+      if (!options?.volatile) {
+        this.journal.steps[key] = copy;
+        this.save(this.journal);
+      }
+      return copy;
+    }
+    async parallel(thunks) {
+      if (thunks.length > 4096) throw new WorkflowError("Too many parallel tasks.");
+      return Promise.all(thunks.map(async (thunk) => {
+        try {
+          return await thunk();
+        } catch (error) {
+          if (this.signal.aborted) throw this.signal.reason;
+          if (error instanceof CheckpointPause || error instanceof PresenterPause || error instanceof UserCancel) throw error;
+          return null;
+        }
+      }));
+    }
+    async agent(_prompt, _options) {
+      throw new WorkflowError("Standalone rehearsal cannot spawn a Copilot agent.");
+    }
+    async pause(key) {
+      this.throwIfAborted();
+      if (this.journal.checkpoints[key] === true) return;
+      this.journal.checkpoints[key] = true;
+      this.save(this.journal);
+      throw new CheckpointPause();
+    }
+  };
+
+  // demo/browser.ts
+  var STORAGE_KEY = "launch-rescue.rehearsal.v2";
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  function byId(id) {
+    const value = document.getElementById(id);
+    if (!(value instanceof HTMLElement)) throw new Error(`Missing interface element: ${id}`);
+    return value;
+  }
+  function button(id) {
+    const value = byId(id);
+    if (!(value instanceof HTMLButtonElement)) throw new Error(`Expected a button: ${id}`);
+    return value;
+  }
+  function input(id) {
+    const value = byId(id);
+    if (!(value instanceof HTMLInputElement)) throw new Error(`Expected an input: ${id}`);
+    return value;
+  }
+  function select(id) {
+    const value = byId(id);
+    if (!(value instanceof HTMLSelectElement)) throw new Error(`Expected a select: ${id}`);
+    return value;
+  }
+  function text(id, value) {
+    byId(id).textContent = value;
+  }
+  function readString(record, key, maximum = 2e3) {
+    const value = record[key];
+    if (typeof value !== "string" || value.length > maximum) throw new WorkflowError(`Invalid saved/native field: ${key}.`);
+    return value;
+  }
+  function stringArray(value) {
+    if (!Array.isArray(value) || value.length > 32) throw new WorkflowError("Invalid saved/native string array.");
+    return value.map((item) => {
+      if (typeof item !== "string" || item.length > 200) throw new WorkflowError("Invalid saved/native string.");
+      return item;
+    });
+  }
+  function readEvidence(value) {
+    if (!Array.isArray(value) || value.length > 8) throw new WorkflowError("Invalid native evidence array.");
+    return value.map((item) => {
+      if (!isRecord(item) || typeof item.count !== "number" || !Number.isSafeInteger(item.count) || item.count < 0) {
+        throw new WorkflowError("Invalid native evidence.");
+      }
+      return { id: readString(item, "id"), summary: readString(item, "summary"), count: item.count };
+    });
+  }
+  function readReport(value) {
+    if (!isRecord(value) || value.synthetic !== true || value.version !== VERSION || value.status !== "draft" && value.status !== "approved" || !isRecord(value.policy) || typeof value.policy.dedupe !== "boolean" || typeof value.policy.capacity !== "boolean" || value.verificationRounds !== 1 && value.verificationRounds !== 2 || !Array.isArray(value.repairs) || value.repairs.length > 2) {
+      throw new WorkflowError("Invalid saved/native report.");
+    }
+    const args = validateArgs({ scenario: value.scenario, mode: value.mode, seed: value.seed, pauseForApproval: true });
+    const evidence = [
+      { id: "E-RETRY", summary: "Allowed report citation", count: 0 },
+      { id: "E-INVENTORY", summary: "Allowed report citation", count: 0 }
+    ];
+    const repairs = value.repairs.map((proposal) => {
+      if (!isRecord(proposal) || proposal.repair !== "dedupe" && proposal.repair !== "capacity") {
+        throw new WorkflowError("Invalid saved/native repair.");
+      }
+      if (proposal.round !== 1 && proposal.round !== 2) throw new WorkflowError("Repair observation round is invalid.");
+      const snapshot = readEvidence(proposal.evidenceSnapshot);
+      return validateRepairRecord(proposal, proposal.repair, proposal.round, snapshot);
+    });
+    const after = validateEvaluation(value.after);
+    if (!after.checks.every((check) => check.passed)) throw new WorkflowError("Report claims readiness without passing checks.");
+    return {
+      version: VERSION,
+      runId: readString(value, "runId", 100),
+      synthetic: true,
+      scenario: args.scenario,
+      mode: args.mode,
+      seed: args.seed,
+      status: value.status,
+      policy: { dedupe: value.policy.dedupe, capacity: value.policy.capacity },
+      before: validateEvaluation(value.before),
+      after,
+      repairs,
+      verificationRounds: value.verificationRounds,
+      reviewer: validateVerdict(value.reviewer, evidence),
+      note: readString(value, "note")
+    };
+  }
+  function readEvent(value) {
+    if (!isRecord(value)) throw new WorkflowError("Invalid execution event.");
+    const id = readString(value, "id", 200);
+    switch (value.type) {
+      case "phase":
+        return { type: "phase", id, title: readString(value, "title") };
+      case "task": {
+        if (value.kind !== "code" && value.kind !== "worker" && value.kind !== "agent" && value.kind !== "gate" || value.state !== "running" && value.state !== "done" && value.state !== "error") {
+          throw new WorkflowError("Invalid native task state.");
+        }
+        return {
+          type: "task",
+          id,
+          title: readString(value, "title"),
+          kind: value.kind,
+          state: value.state,
+          dependsOn: stringArray(value.dependsOn),
+          detail: readString(value, "detail")
+        };
+      }
+      case "evidence":
+        return {
+          type: "evidence",
+          id,
+          title: readString(value, "title"),
+          evidence: readEvidence(value.evidence),
+          evaluation: validateEvaluation(value.evaluation)
+        };
+      case "branch": {
+        if (value.repair !== "dedupe" && value.repair !== "capacity") throw new WorkflowError("Invalid branch repair.");
+        return { type: "branch", id, title: readString(value, "title"), repair: value.repair, reason: readString(value, "reason") };
+      }
+      case "verification": {
+        if (value.round !== 1 && value.round !== 2) throw new WorkflowError("Invalid verification round.");
+        return { type: "verification", id, title: readString(value, "title"), evaluation: validateEvaluation(value.evaluation), round: value.round };
+      }
+      case "twist":
+        return { type: "twist", id, title: readString(value, "title"), detail: readString(value, "detail") };
+      case "ready":
+        return { type: "ready", id, report: readReport(value.report) };
+      case "complete":
+        return { type: "complete", id, report: readReport(value.report) };
+      default:
+        throw new WorkflowError("Unknown execution event type.");
+    }
+  }
+  function readNativeSnapshot(value) {
+    if (!isRecord(value) || value.engine !== "copilot-runtime" || !Array.isArray(value.events) || value.events.length > 100 || value.controller !== "sdk-terminal" && value.controller !== "copilot-session" || !["running", "completed", "awaiting-approval", "paused", "cancelled", "held", "halted", "error", "settling"].includes(String(value.status))) {
+      throw new WorkflowError("The observer received an invalid native snapshot.");
+    }
+    return {
+      runId: readString(value, "runId", 100),
+      sessionId: readString(value, "sessionId", 100),
+      args: validateArgs(value.args),
+      controller: value.controller,
+      status: readString(value, "status", 100),
+      phase: readString(value, "phase", 100),
+      updatedAt: readString(value, "updatedAt", 100),
+      events: value.events.map(readEvent),
+      report: value.report === null ? null : readReport(value.report),
+      error: value.error === null ? null : readString(value, "error", 6e3)
+    };
+  }
+  function readSaved(value) {
+    if (!isRecord(value) || !isRecord(value.journal) || value.journal.version !== 1 || !isRecord(value.journal.steps) || !isRecord(value.journal.checkpoints) || !Array.isArray(value.events) || value.events.length > 100 || typeof value.status !== "string" || !isUiStatus(value.status)) {
+      throw new WorkflowError("Saved rehearsal data is invalid. Use New run to replace only this demo's state.");
+    }
+    const args = validateArgs(value.journal.args);
+    if (args.mode !== "rehearsal") throw new WorkflowError("A browser journal cannot contain live agent work.");
+    const steps = {};
+    const checkpoints = {};
+    for (const [key, entry] of Object.entries(value.journal.steps)) {
+      if (!key.startsWith(`${VERSION}:`) || !isJsonValue(entry)) throw new WorkflowError("Invalid saved step.");
+      steps[key] = entry;
+    }
+    for (const [key, entry] of Object.entries(value.journal.checkpoints)) {
+      if (!key.startsWith(`${VERSION}:`) || typeof entry !== "boolean") throw new WorkflowError("Invalid checkpoint.");
+      checkpoints[key] = entry;
+    }
+    return {
+      journal: { version: 1, runId: readString(value.journal, "runId", 100), args, steps, checkpoints },
+      events: value.events.map(readEvent),
+      status: value.status,
+      phase: readString(value, "phase", 100),
+      report: value.report === null ? null : readReport(value.report)
+    };
+  }
+  function isUiStatus(value) {
+    return value === "idle" || value === "running" || value === "paused" || value === "awaiting-approval" || value === "completed" || value === "cancelled" || value === "held" || value === "error" || value === "observing";
+  }
+  var graphElement = document.getElementById("workflow-graph");
+  if (!(graphElement instanceof SVGSVGElement)) throw new Error("Workflow graph is missing.");
+  var graph = graphElement;
+  var events = /* @__PURE__ */ new Map();
+  var mode = "offline";
+  var scenario = "mixed";
+  var status = "idle";
+  var phase = "Choose a failure";
+  var journal = null;
+  var current = null;
+  var report = null;
+  var before = null;
+  var measured = null;
+  var nativeId = null;
+  var nativeMode = "rehearsal";
+  var nativeController = "copilot-session";
+  var nativeRevision = null;
+  var nativeObservedAt = 0;
+  var nativeRunError = null;
+  var nativeSetupOpen = false;
+  var pollGeneration = 0;
+  var nativeRequest = null;
+  var pollTimer = null;
+  var renderPending = false;
+  var selectedTask = null;
+  var cues = {
+    Observe: "\u201CWe are reproducing a failure, not asking a model to guess. These are 2,500 synthetic attendees.\u201D",
+    Diagnose: "\u201CTwo independent code probes run in parallel. Their results decide whether a specialist is needed.\u201D",
+    Repair: "\u201CLook at the graph: a specialist appeared because evidence justified it. No arbitrary generated code is executed.\u201D",
+    Verify: "\u201CA confident answer is not a passing test. The candidate must satisfy all three contracts.\u201D",
+    Adapt: "\u201CNew evidence changed the next step. The workflow preserved the retry repair and added only the missing capacity work.\u201D",
+    Challenge: "\u201CThe live workflow asks a different model to challenge the evidence. Offline, this is a separate JavaScript ledger walk.\u201D",
+    Approve: "\u201CThe run stops here. Passing checks does not authorize a deployment. This approval is only a local synthetic draft.\u201D",
+    Complete: "\u201CThe pattern is evidence, bounded action, independent challenge, and a human checkpoint\u2014not a bigger prompt.\u201D"
+  };
+  function notice(message) {
+    text("notice", message);
+    byId("notice").hidden = false;
+  }
+  function clearNotice() {
+    byId("notice").hidden = true;
+    text("notice", "");
+  }
+  function save() {
+    if (!journal || mode !== "offline") return;
+    const value = { journal, events: [...events.values()], status, phase, report };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+    } catch (error) {
+      throw new WorkflowError(`This browser could not save the rehearsal checkpoint. Run stopped; persistence is not guaranteed. ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  function absorb(event) {
+    events.set(`${event.type}:${event.id}`, event);
+    if (event.type === "phase") phase = event.title;
+    if (event.type === "evidence") {
+      before = event.evaluation;
+      measured = event.evaluation;
+    }
+    if (event.type === "verification") measured = event.evaluation;
+    if (event.type === "ready" || event.type === "complete") {
+      report = event.report;
+      before = report.before;
+      measured = report.after;
+    }
+  }
+  function scheduleRender() {
+    if (renderPending) return;
+    renderPending = true;
+    requestAnimationFrame(() => {
+      renderPending = false;
+      render();
+    });
+  }
+  async function emit(event) {
+    absorb(event);
+    save();
+    scheduleRender();
+  }
+  function resetMemory() {
+    events.clear();
+    report = null;
+    before = null;
+    measured = null;
+    current = null;
+    selectedTask = null;
+    phase = "Choose a failure";
+    status = "idle";
+    byId("task-inspector").hidden = true;
+  }
+  function restore() {
+    resetMemory();
+    journal = null;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = readSaved(JSON.parse(raw));
+      journal = saved.journal;
+      scenario = journal.args.scenario;
+      input("seed-input").value = String(journal.args.seed);
+      for (const event of saved.events) absorb(event);
+      phase = saved.phase;
+      status = saved.status === "running" ? "paused" : saved.status;
+      if (report?.status === "draft" && Object.values(journal.checkpoints).some(Boolean) && status !== "cancelled" && status !== "completed" && status !== "error") {
+        status = "awaiting-approval";
+      }
+      if (saved.status === "running") notice("A saved run was interrupted. Resume reuses completed steps; unfinished work may run again.");
+    } catch (error) {
+      notice(error instanceof Error ? error.message : String(error));
+    }
+  }
+  async function execute(resume = false) {
+    if (mode !== "offline" || status === "running") return;
+    clearNotice();
+    try {
+      if (!resume) {
+        const args = validateArgs({ scenario, mode: "rehearsal", seed: Number(input("seed-input").value), pauseForApproval: true });
+        resetMemory();
+        journal = newJournal(args);
+      }
+      if (!journal) throw new WorkflowError("There is no saved run to resume.");
+      const context = new LocalContext(journal, () => save(), Number(select("pace-select").value));
+      current = context;
+      status = "running";
+      save();
+      render();
+      const result = await runLaunchRescue(context, emit);
+      report = result;
+      status = "completed";
+      save();
+    } catch (error) {
+      if (error instanceof CheckpointPause) status = "awaiting-approval";
+      else if (error instanceof PresenterPause) status = "paused";
+      else if (error instanceof UserCancel) status = "cancelled";
+      else {
+        status = "error";
+        notice(error instanceof Error ? error.message : String(error));
+      }
+      try {
+        save();
+      } catch (saveError) {
+        notice(saveError instanceof Error ? saveError.message : String(saveError));
+      }
+    } finally {
+      current = null;
+      render();
+    }
+  }
+  function svg(tag, attributes) {
+    const element = document.createElementNS(SVG_NS, tag);
+    for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+    return element;
+  }
+  function svgText(x, y, value, className) {
+    const element = svg("text", { x: String(x), y: String(y), class: className });
+    element.textContent = value;
+    return element;
+  }
+  function taskEvent(id) {
+    const value = events.get(`task:${id}`);
+    return value?.type === "task" ? value : void 0;
+  }
+  function evaluationFor(id) {
+    if (id === "baseline") return before;
+    if (id !== "verify-1" && id !== "verify-2") return null;
+    const value = events.get(`verification:${id === "verify-2" ? "verification-2" : "verification-1"}`);
+    return value?.type === "verification" ? value.evaluation : null;
+  }
+  function approvalDisplay() {
+    if (status === "completed") {
+      return report?.status === "approved" ? {
+        title: "Local draft approved.",
+        node: "Local draft approved",
+        detail: "The local draft and evidence are ready. No production system or real ticket was changed."
+      } : {
+        title: "Draft-only run complete.",
+        node: "Draft only / no approval",
+        detail: "Draft-only run finished. No approval was requested or claimed. Start a new checkpoint-enabled run to request review."
+      };
+    }
+    if (status === "held" || status === "cancelled" || status === "error") {
+      return {
+        title: status === "held" ? "Host closed. Draft held." : "Run stopped.",
+        node: status === "held" ? "Held / host closed" : "Stopped / no active gate",
+        detail: report?.status === "approved" ? "Local draft approval was recorded before the run stopped. No deployment occurred." : status === "held" ? "The SDK host closed without approval. Start a new run; the closed terminal cannot resume this draft." : "The run stopped without approval. No active review checkpoint remains."
+      };
+    }
+    if (status === "awaiting-approval" || status === "paused") {
+      return {
+        title: "A human still decides.",
+        node: "Awaiting human review",
+        detail: mode === "offline" ? "The checks and independent review pass. Approve only this synthetic local draft, or keep it on hold." : nativeController === "sdk-terminal" ? "Review evidence, then type APPROVE in the running SDK terminal. The browser is read-only." : "Inspect the native run in Copilot. Resume in the owning session's /workflows panel; this browser is read-only."
+      };
+    }
+    return {
+      title: "Review is not open yet.",
+      node: "Review pending",
+      detail: "The workflow has not reached an active review checkpoint."
+    };
+  }
+  function flowSummary() {
+    if (status === "error" || status === "held" || status === "cancelled") {
+      return "The run stopped. Inspect the explanation; no deployment or ticket purchase occurred.";
+    }
+    if (report) {
+      const change = report.verificationRounds === 2 ? "A failed capacity check added a specialist. The revised plan passes all 3 checks." : "Evidence chose the specialists. All 3 checks pass.";
+      return status === "completed" ? `${change} Local draft complete.` : `${change} Human review is next.`;
+    }
+    const failed = evaluationFor("verify-1");
+    if (failed && !failed.checks.every((check) => check.passed)) {
+      return `${failed.oversoldSeats.toLocaleString()} seats over capacity. Re-check the inventory and add the missing specialist.`;
+    }
+    if (events.has("twist:twist")) return "The room changed after planning. Check the candidate against the new evidence.";
+    const initial = events.get("evidence:initial-evidence");
+    if (initial?.type === "evidence") {
+      const retries = initial.evidence.find((item) => item.id === "E-RETRY")?.count ?? 0;
+      const seats = initial.evidence.find((item) => item.id === "E-INVENTORY")?.count ?? 0;
+      if (retries && seats) return `${retries.toLocaleString()} retries and ${seats.toLocaleString()} unavailable seats: two specialists work in parallel.`;
+      return retries ? `${retries.toLocaleString()} retry requests found. Add the retry specialist, then test its repair.` : `${seats.toLocaleString()} seats are unavailable. Add the capacity specialist, then test its repair.`;
+    }
+    if (status === "running") return "Reproduce the failure for 2,500 synthetic attendees. Evidence comes before agents.";
+    return mode === "native" ? "Open the run command in your terminal. This page observes Copilot; it does not start models." : "Choose a failure, run the rescue, and follow the evidence from left to right.";
+  }
+  function drawGraph() {
+    const focusedTask = document.activeElement instanceof Element && graph.contains(document.activeElement) ? document.activeElement.closest("[data-task]")?.getAttribute("data-task") : null;
+    const adapted = Boolean(taskEvent("rescan-inventory") || taskEvent("capacity-specialist-2"));
+    const stage = document.documentElement.dataset.stage === "true" && innerWidth > 1100;
+    const top = stage ? 38 : 42;
+    const main = stage ? 90 : 128;
+    const lower = stage ? 142 : 214;
+    const added = stage ? 246 : 402;
+    const height = stage ? 88 : 112;
+    const center = height / 2;
+    const nodes = [
+      { id: "baseline", x: 24, y: main, lines: ["Reproduce", "the failure"] },
+      { id: "scan-retries", x: 276, y: top, lines: ["Inspect", "request identities"] },
+      { id: "scan-inventory", x: 276, y: lower, lines: ["Audit", "room inventory"] }
+    ];
+    if (taskEvent("dedupe-specialist-1")) nodes.push({ id: "dedupe-specialist-1", x: 528, y: top, lines: ["Retry", "specialist"] });
+    if (taskEvent("capacity-specialist-1")) nodes.push({ id: "capacity-specialist-1", x: 528, y: lower, lines: ["Capacity", "specialist"] });
+    nodes.push(
+      { id: "verify-1", x: 780, y: main, lines: ["Acceptance", "checks"] },
+      { id: "reviewer", x: 1032, y: main, lines: ["Independent", "challenge"] },
+      { id: "approval", x: 1284, y: main, lines: ["Human", "checkpoint"] }
+    );
+    if (adapted) nodes.push(
+      { id: "rescan-inventory", x: 276, y: added, lines: ["Re-audit", "current inventory"] },
+      { id: "capacity-specialist-2", x: 528, y: added, lines: ["New capacity", "specialist"] },
+      { id: "verify-2", x: 780, y: added, lines: ["Re-run", "acceptance checks"] }
+    );
+    graph.replaceChildren();
+    const graphHeight = stage ? adapted ? 348 : 256 : adapted ? 552 : 365;
+    graph.setAttribute("viewBox", `0 0 1540 ${graphHeight}`);
+    const bands = ["Reproduce", "Collect evidence", "Route specialists", "Verify with code", "Challenge", "Approve"];
+    bands.forEach((label, index) => {
+      graph.append(svgText(24 + index * 252, 24, label, "graph-lane-label"));
+      if (index > 0) graph.append(svg("line", { x1: String(index * 252 + 6), x2: String(index * 252 + 6), y1: "42", y2: String(graphHeight - 22), class: "graph-separator" }));
+    });
+    const connections = [
+      ["baseline", "scan-retries"],
+      ["baseline", "scan-inventory"],
+      ["scan-retries", "dedupe-specialist-1"],
+      ["scan-inventory", "capacity-specialist-1"],
+      ["dedupe-specialist-1", "verify-1"],
+      ["capacity-specialist-1", "verify-1"],
+      [adapted ? "verify-2" : "verify-1", "reviewer"],
+      ["reviewer", "approval"],
+      ["rescan-inventory", "capacity-specialist-2"],
+      ["capacity-specialist-2", "verify-2"]
+    ];
+    for (const [sourceId, targetId] of connections) {
+      const source = nodes.find((node) => node.id === sourceId);
+      const target = nodes.find((node) => node.id === targetId);
+      if (!source || !target) continue;
+      const startX = source.x + 220;
+      const startY = source.y + center;
+      const endX = target.x;
+      const endY = target.y + center;
+      const active = taskEvent(sourceId)?.state === "done";
+      graph.append(svg("path", { d: `M${startX},${startY} C${startX + 24},${startY} ${endX - 24},${endY} ${endX},${endY}`, class: `graph-wire${active ? " active" : ""}` }));
+    }
+    if (adapted) {
+      const bend = stage ? 236 : 365;
+      graph.append(svg("path", { d: `M890,${main + height} V${bend} H386 V${added}`, class: "graph-wire active" }));
+    }
+    if (!taskEvent("dedupe-specialist-1") && !taskEvent("capacity-specialist-1")) {
+      graph.append(svgText(548, 176, "Evidence chooses", "graph-placeholder"));
+      graph.append(svgText(548, 205, "who joins.", "graph-placeholder"));
+    }
+    for (const node of nodes) {
+      const task = taskEvent(node.id);
+      let nodeState = task?.state ?? "waiting";
+      let stateText = task?.state === "done" ? "Completed" : task?.state === "running" ? status === "paused" ? "Paused" : "Working" : task?.state === "error" ? "Held / error" : "Waiting";
+      const evaluation = task?.state === "done" ? evaluationFor(node.id) : null;
+      if (evaluation) {
+        const passed = evaluation.checks.every((check) => check.passed);
+        nodeState = passed ? "passed" : "failed";
+        stateText = node.id === "baseline" ? "Failure reproduced" : passed ? "3 / 3 pass" : "Check failed";
+      }
+      if (node.id === "approval" && task) {
+        stateText = approvalDisplay().node;
+      }
+      const group = svg("g", {
+        class: "graph-node",
+        tabindex: "0",
+        role: "button",
+        "data-task": node.id,
+        "data-state": nodeState,
+        "aria-label": `${node.lines.join(" ")}: ${stateText}`
+      });
+      group.append(svg("rect", { x: String(node.x), y: String(node.y), width: "220", height: String(height), rx: "10" }));
+      group.append(svgText(node.x + 16, node.y + (stage ? 16 : 22), (task?.kind ?? (node.id === "reviewer" ? mode === "native" && nativeMode === "live" ? "agent" : "worker" : node.id === "approval" ? "gate" : "code")).toUpperCase(), "graph-kind"));
+      node.lines.forEach((line, index) => group.append(svgText(node.x + 16, node.y + (stage ? 34 : 49) + index * (stage ? 22 : 24), line, "graph-title")));
+      group.append(svgText(node.x + 16, node.y + height - (stage ? 9 : 12), stateText, "graph-status"));
+      graph.append(group);
+    }
+    if (focusedTask) graph.querySelector(`[data-task="${focusedTask}"]`)?.focus({ preventScroll: true });
+  }
+  function renderChecks() {
+    const container = byId("checks-list");
+    container.replaceChildren();
+    const checks = measured?.checks ?? [
+      { id: "C-UNIQUE", title: "One outcome per attendee", passed: false, detail: "Not run" },
+      { id: "C-CAPACITY", title: "Never exceed room capacity", passed: false, detail: "Not run" },
+      { id: "C-COVERAGE", title: "No attendee disappears", passed: false, detail: "Not run" }
+    ];
+    for (const check of checks) {
+      const row = document.createElement("div");
+      row.className = "check";
+      const badge = document.createElement("span");
+      badge.className = "check-status";
+      badge.textContent = measured ? check.passed ? "PASS" : "FAIL" : "WAIT";
+      badge.dataset.result = measured ? check.passed ? "pass" : "fail" : "wait";
+      const copy = document.createElement("div");
+      const title = document.createElement("div");
+      title.className = "check-name";
+      title.textContent = check.title;
+      const detail = document.createElement("div");
+      detail.className = "check-detail";
+      detail.textContent = check.detail;
+      copy.append(title, detail);
+      row.append(badge, copy);
+      container.append(row);
+    }
+    text("checks-total", measured ? `${checks.filter((check) => check.passed).length} / 3 pass` : "0 / 3 run");
+  }
+  function renderEvidence() {
+    const feed = byId("evidence-feed");
+    feed.replaceChildren();
+    const messages = [];
+    const initial = events.get("evidence:initial-evidence");
+    if (initial?.type === "evidence") {
+      initial.evidence.forEach((item) => messages.push({ id: item.id, message: item.summary }));
+    }
+    if (events.has("twist:twist")) messages.push({ id: "NEW INPUT", message: "Main hall capacity changed from 1,800 to 1,600 after the first plan." });
+    const branches = [...events.values()].filter((event) => event.type === "branch");
+    branches.forEach((branch) => messages.push({ id: "ROUTING", message: branch.title + ". " + branch.reason }));
+    if (report) messages.push({ id: "REVIEW", message: report.reviewer.rationale });
+    if (messages.length === 0) messages.push({ id: "WAITING", message: "The graph is driven by execution events, not a prerecorded animation." });
+    for (const message of messages.slice(-4)) {
+      const li = document.createElement("li");
+      const code = document.createElement("code");
+      code.textContent = message.id;
+      const copy = document.createElement("span");
+      copy.textContent = message.message;
+      li.append(code, copy);
+      feed.append(li);
+    }
+  }
+  function render() {
+    const active = status === "running";
+    const native = mode === "native";
+    document.documentElement.dataset.nativeConnected = String(native && nativeId !== null);
+    document.documentElement.dataset.nativeSetup = String(native && nativeSetupOpen);
+    const canResume = status === "paused";
+    document.querySelectorAll(".scenario-choice").forEach((choice) => {
+      choice.setAttribute("aria-pressed", String(choice.dataset.scenario === scenario));
+      choice.disabled = active || native || status === "paused" || status === "awaiting-approval";
+    });
+    button("offline-mode").setAttribute("aria-pressed", String(!native));
+    button("native-mode").setAttribute("aria-pressed", String(native));
+    button("offline-mode").disabled = active && !native;
+    button("native-mode").disabled = active && !native;
+    byId("native-panel").hidden = !native;
+    text("mode-label", native ? nativeId ? `NATIVE COPILOT / ${status === "completed" ? "COMPLETED " : status === "held" ? "HELD " : ""}${nativeMode === "live" ? "LIVE RUN" : "REHEARSAL"}` : "NATIVE COPILOT / WAITING" : "OFFLINE REHEARSAL");
+    text("mode-description", native ? nativeId ? status === "held" ? "SDK host closed without approval. Start a new run to continue." : nativeMode === "live" ? status === "completed" ? "Results of an actual completed model run. No models are currently started by this page." : "Actual Copilot workflow-owned agents. Live model usage." : "Actual Copilot runtime. JavaScript workers; no LLM calls." : "Waiting for a local native run. No models started by this page." : "Real JavaScript workers and checks. No LLM calls.");
+    text("specialist-legend", native && nativeMode === "live" ? "Copilot agents" : "Local workers");
+    const run = button("run-button");
+    run.textContent = native ? nativeSetupOpen ? "Hide run command" : "Show run command" : active ? "Running\u2026" : canResume ? "Resume saved run" : status === "awaiting-approval" ? "Review required" : status === "completed" ? "Run again" : "Run rescue";
+    run.disabled = !native && (active || status === "awaiting-approval");
+    button("pause-button").disabled = !active || native;
+    button("reset-button").disabled = active || native;
+    select("pace-select").disabled = active || native;
+    input("seed-input").disabled = active || native || status === "paused" || status === "awaiting-approval";
+    const labels = {
+      idle: "Ready",
+      running: "Running",
+      paused: "Paused",
+      "awaiting-approval": "Review checkpoint",
+      completed: report?.status === "approved" ? "Draft approved" : "Draft complete",
+      cancelled: native ? "Cancelled" : "On hold",
+      held: "Held / host closed",
+      error: "Held / error",
+      observing: "Watching"
+    };
+    text("status-label", labels[status]);
+    byId("status-label").dataset.state = status;
+    text("phase-label", phase);
+    text("flow-summary", flowSummary());
+    text("cue-text", cues[phase] ?? "\u201CWhich failure should we trigger? Show of hands. We won't choose the agents; the evidence will.\u201D");
+    byId("twist-banner").hidden = !events.has("twist:twist");
+    drawGraph();
+    renderChecks();
+    renderEvidence();
+    text("duplicate-count", measured ? measured.duplicateOutcomes.toLocaleString() : "\u2014");
+    text("oversold-count", measured ? measured.oversoldSeats.toLocaleString() : "\u2014");
+    text("confirmed-count", measured ? measured.uniqueConfirmed.toLocaleString() : "\u2014");
+    text("duplicate-before", before ? `Baseline: ${before.duplicateOutcomes.toLocaleString()}` : "No fixture evaluated yet");
+    text("oversold-before", before ? `Baseline: ${before.oversoldSeats.toLocaleString()}` : "No fixture evaluated yet");
+    text("waitlist-count", measured ? `${measured.waitlisted.toLocaleString()} waitlisted / ${ATTENDEES.toLocaleString()} accounted for` : "No fixture evaluated yet");
+    text("measurement-label", report ? "Verified candidate" : measured && events.has("verification:verification-1") ? "Candidate check" : measured ? "Buggy baseline" : "Waiting for execution");
+    byId("approval-panel").hidden = report === null;
+    button("approve-button").hidden = native || status !== "awaiting-approval";
+    button("hold-button").hidden = native || status !== "awaiting-approval";
+    button("download-button").disabled = report === null;
+    const approval = approvalDisplay();
+    text("approval-title", approval.title);
+    text("approval-detail", approval.detail);
+    if (selectedTask && !byId("task-inspector").hidden) inspectTask(selectedTask);
+  }
+  function inspectTask(id) {
+    selectedTask = id;
+    const task = taskEvent(id);
+    text("inspector-title", task?.title ?? "Not executed yet");
+    const evaluation = task?.state === "done" ? evaluationFor(id) : null;
+    const parts = [task ? `${task.state.toUpperCase()} \xB7 ${task.kind.toUpperCase()}${task.detail ? ` \xB7 ${task.detail}` : ""}` : "This stage is defined by the workflow, but has not executed in this run."];
+    if (evaluation) {
+      parts.push(`${evaluation.checks.every((check) => check.passed) ? "PASS" : "FAIL"}: ${evaluation.checks.filter((check) => check.passed).length} / 3 checks pass.`);
+      evaluation.checks.forEach((check) => parts.push(`${check.passed ? "PASS" : "FAIL"} \u2014 ${check.title}: ${check.detail}.`));
+      parts.push(`${evaluation.uniqueConfirmed.toLocaleString()} unique confirmations; ${evaluation.waitlisted.toLocaleString()} waitlisted.`);
+    }
+    const initial = events.get("evidence:initial-evidence");
+    if (initial?.type === "evidence" && (id === "scan-retries" || id === "scan-inventory")) {
+      const evidence = initial.evidence.find((item) => item.id === (id === "scan-retries" ? "E-RETRY" : "E-INVENTORY"));
+      if (evidence) parts.push(`${evidence.id}: ${evidence.summary}`);
+    }
+    if (id === "rescan-inventory") {
+      const inventory = evaluationFor("verify-1");
+      inventory?.occupancy.forEach((room) => parts.push(`Current ${room.room.toLowerCase()}: ${room.capacity.toLocaleString()} seats; candidate used ${room.used.toLocaleString()}.`));
+    }
+    const proposal = report?.repairs.find((item) => id.startsWith(item.repair));
+    if (proposal) parts.push(`Observation round ${proposal.round}. ${proposal.rationale} Evidence snapshot: ${proposal.evidenceSnapshot.map((item) => item.summary).join(" ")}`);
+    if (id === "reviewer" && report) parts.push(`${report.reviewer.verdict.toUpperCase()}: ${report.reviewer.rationale}`);
+    if (id === "approval" && report) parts.push(approvalDisplay().detail);
+    text("inspector-detail", parts.join("\n"));
+    byId("task-inspector").hidden = false;
+  }
+  async function pollNative(generation) {
+    if (mode !== "native" || generation !== pollGeneration) return;
+    if (location.protocol === "file:") {
+      text("observer-status", "Observer unavailable for file://. Start Launch-Demo.ps1 for native monitoring.");
+      return;
+    }
+    const controller = new AbortController();
+    nativeRequest = controller;
+    const timeout = setTimeout(() => controller.abort(new Error("Native observer request timed out.")), 5e3);
+    try {
+      const response = await fetch("/api/native/latest", { cache: "no-store", signal: controller.signal });
+      if (!response.ok) throw new WorkflowError(`Native observer returned HTTP ${response.status}. Start the bundled local server.`);
+      const payload = await response.json();
+      if (mode !== "native" || generation !== pollGeneration) return;
+      if (!isRecord(payload) || !Object.hasOwn(payload, "run")) throw new WorkflowError("Native observer response has no run field.");
+      if (payload.run === null) {
+        resetMemory();
+        nativeId = null;
+        nativeRevision = null;
+        nativeObservedAt = 0;
+        nativeRunError = null;
+        clearNotice();
+        text("native-command", "node .\\native\\Run-Sdk.mjs --live --pause");
+        button("copy-command").hidden = false;
+        button("copy-command").textContent = "Copy command";
+        text("observer-status", "Connected. Waiting for your native workflow run.");
+        status = "observing";
+        render();
+        return;
+      }
+      const snapshot = readNativeSnapshot(payload.run);
+      const observedAt = Date.parse(snapshot.updatedAt);
+      if (!Number.isFinite(observedAt)) throw new WorkflowError("Native snapshot has an invalid update time.");
+      if (!/^[a-zA-Z0-9_-]{1,100}$/.test(snapshot.sessionId)) throw new WorkflowError("Native snapshot has an invalid owning session ID.");
+      if (snapshot.runId === nativeId && observedAt < nativeObservedAt) {
+        if (nativeRunError) notice(nativeRunError);
+        else clearNotice();
+        return;
+      }
+      const revision = JSON.stringify([snapshot.runId, snapshot.updatedAt, snapshot.status, snapshot.error]);
+      nativeRunError = snapshot.error;
+      if (nativeRunError) notice(nativeRunError);
+      else clearNotice();
+      text("observer-status", `Native run ${snapshot.runId.slice(0, 8)}: ${snapshot.status}, updated ${new Date(snapshot.updatedAt).toLocaleString()}. Usage is shown in Copilot.`);
+      if (revision === nativeRevision) return;
+      nativeRevision = revision;
+      nativeObservedAt = observedAt;
+      if (snapshot.runId !== nativeId) {
+        resetMemory();
+        nativeId = snapshot.runId;
+      }
+      nativeMode = snapshot.args.mode;
+      nativeController = snapshot.controller;
+      scenario = snapshot.args.scenario;
+      for (const event of snapshot.events) absorb(event);
+      phase = snapshot.phase;
+      report = snapshot.report;
+      status = snapshot.status === "completed" ? "completed" : snapshot.status === "awaiting-approval" ? "awaiting-approval" : snapshot.status === "running" ? "running" : snapshot.status === "cancelled" ? "cancelled" : snapshot.status === "held" ? "held" : snapshot.status === "error" || snapshot.status === "halted" ? "error" : snapshot.status === "settling" ? "observing" : "paused";
+      const awaitingReview = status === "awaiting-approval" || status === "paused";
+      text("native-command", awaitingReview ? nativeController === "sdk-terminal" ? "Return to the running SDK terminal; type APPROVE after reviewing the synthetic draft." : `copilot --experimental --model gpt-6.1-sol --reasoning-effort max --resume ${snapshot.sessionId}` : "node .\\native\\Run-Sdk.mjs --live --pause");
+      button("copy-command").hidden = awaitingReview && nativeController === "sdk-terminal";
+      button("copy-command").textContent = awaitingReview ? "Copy resume command" : "Copy command";
+      render();
+    } catch (error) {
+      if (mode === "native" && generation === pollGeneration) {
+        text("observer-status", "Observer disconnected. No native result has been substituted.");
+        notice(error instanceof Error ? error.message : String(error));
+      }
+    } finally {
+      clearTimeout(timeout);
+      if (nativeRequest === controller) nativeRequest = null;
+      if (mode === "native" && generation === pollGeneration) {
+        pollTimer = setTimeout(() => void pollNative(generation), 1500);
+      }
+    }
+  }
+  function switchMode(next) {
+    if (status === "running" && mode === "offline") return;
+    if (pollTimer) {
+      clearTimeout(pollTimer);
+      pollTimer = null;
+    }
+    pollGeneration++;
+    nativeRequest?.abort();
+    nativeRequest = null;
+    mode = next;
+    clearNotice();
+    resetMemory();
+    nativeId = null;
+    nativeRevision = null;
+    nativeObservedAt = 0;
+    nativeRunError = null;
+    nativeSetupOpen = false;
+    if (next === "offline") restore();
+    else {
+      status = "observing";
+      void pollNative(pollGeneration);
+    }
+    render();
+  }
+  async function copyCommand() {
+    try {
+      if (!navigator.clipboard) throw new WorkflowError("Clipboard access is unavailable. Select and copy the visible command manually.");
+      await navigator.clipboard.writeText(byId("native-command").textContent ?? "");
+      button("copy-command").textContent = "Copied";
+      setTimeout(() => {
+        button("copy-command").textContent = "Copy command";
+      }, 1800);
+    } catch (error) {
+      notice(error instanceof Error ? error.message : String(error));
+    }
+  }
+  function downloadEvidence() {
+    if (!report) {
+      notice("There is no verified report to download yet.");
+      return;
+    }
+    const blob = new Blob([JSON.stringify({
+      exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      engine: mode === "native" ? "copilot-runtime" : "standalone-rehearsal",
+      report,
+      executionEvents: [...events.values()]
+    }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `launch-rescue-${report.runId}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1e3);
+  }
+  function toggleStage() {
+    const enabled = document.documentElement.dataset.stage !== "true";
+    document.documentElement.dataset.stage = String(enabled);
+    button("stage-toggle").setAttribute("aria-pressed", String(enabled));
+    render();
+  }
+  document.querySelectorAll(".scenario-choice").forEach((choice) => choice.addEventListener("click", () => {
+    if (status === "running" || status === "awaiting-approval" || mode === "native") return;
+    const value = validateArgs({ scenario: choice.dataset.scenario });
+    scenario = value.scenario;
+    render();
+  }));
+  button("run-button").addEventListener("click", () => {
+    if (mode === "native") {
+      nativeSetupOpen = !nativeSetupOpen;
+      render();
+      if (nativeSetupOpen) byId("native-panel").scrollIntoView({ block: "start" });
+    } else void execute(status === "paused");
+  });
+  button("pause-button").addEventListener("click", () => current?.pauseNow());
+  button("reset-button").addEventListener("click", () => {
+    if (status === "running" || mode === "native") return;
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      journal = null;
+      resetMemory();
+      clearNotice();
+      render();
+    } catch (error) {
+      notice(`Unable to reset this demo's saved state: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  });
+  button("approve-button").addEventListener("click", () => {
+    if (status === "awaiting-approval" && mode === "offline") void execute(true);
+  });
+  button("hold-button").addEventListener("click", () => {
+    status = "cancelled";
+    try {
+      save();
+    } catch (error) {
+      notice(error instanceof Error ? error.message : String(error));
+    }
+    render();
+  });
+  button("download-button").addEventListener("click", downloadEvidence);
+  button("offline-mode").addEventListener("click", () => switchMode("offline"));
+  button("native-mode").addEventListener("click", () => switchMode("native"));
+  button("copy-command").addEventListener("click", () => void copyCommand());
+  button("stage-toggle").addEventListener("click", toggleStage);
+  button("cue-toggle").addEventListener("click", () => {
+    const panel = byId("presenter-cue");
+    panel.hidden = !panel.hidden;
+    button("cue-toggle").setAttribute("aria-pressed", String(!panel.hidden));
+  });
+  button("theme-toggle").addEventListener("click", () => {
+    document.documentElement.dataset.theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  });
+  button("close-inspector").addEventListener("click", () => {
+    byId("task-inspector").hidden = true;
+    if (selectedTask) graph.querySelector(`[data-task="${selectedTask}"]`)?.focus();
+    selectedTask = null;
+  });
+  graph.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) return;
+    const target = event.target.closest("[data-task]");
+    const id = target?.getAttribute("data-task");
+    if (id) inspectTask(id);
+  });
+  graph.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    if (!(event.target instanceof Element)) return;
+    const id = event.target.closest("[data-task]")?.getAttribute("data-task");
+    if (id) {
+      event.preventDefault();
+      inspectTask(id);
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.ctrlKey || event.altKey || event.metaKey || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement) return;
+    if (event.key.toLowerCase() === "s" && mode === "offline" && status !== "awaiting-approval") {
+      event.preventDefault();
+      void execute(status === "paused");
+    } else if (event.key.toLowerCase() === "p") current?.pauseNow();
+    else if (event.key.toLowerCase() === "v") toggleStage();
+  });
+  text("workflow-source", 'import type {\r\n  JsonValue,\r\n  WorkflowAgentOptions,\r\n  WorkflowContext,\r\n  WorkflowJsonSchema,\r\n} from "@github/copilot-sdk/extension";\r\n\r\nexport const VERSION = "launch-rescue-v2";\r\nexport const ATTENDEES = 2500;\r\nexport const ANALYST = { model: "gpt-6.1-sol", reasoningEffort: "max", agent: "launch-analyst" };\r\nexport const REVIEWER = { model: "claude-sonnet-5.5", reasoningEffort: "high", agent: "launch-reviewer" };\r\nconst OUTPUT_CONTRACT = "rationale must be plain text with 12 to 1200 characters (aim for at most 600). evidenceIds must contain at least one unique ID from the supplied evidence, with no repeated or unknown IDs.";\r\n\r\nexport type Scenario = "retries" | "capacity" | "parallel" | "mixed";\r\nexport type WorkflowArgs = {\r\n  scenario: Scenario;\r\n  mode: "rehearsal" | "live";\r\n  seed: number;\r\n  pauseForApproval: boolean;\r\n};\r\nexport type Repair = "dedupe" | "capacity";\r\nexport type Policy = { dedupe: boolean; capacity: boolean };\r\nexport type Room = { id: string; label: string; declaredCapacity: number; capacity: number };\r\nexport type Request = { ticket: string };\r\nexport type Allocation = { ticket: string; room: string | null };\r\nexport type Fixture = { requests: Request[]; tickets: string[]; rooms: Room[] };\r\nexport type Check = { id: string; title: string; passed: boolean; detail: string };\r\nexport type Evaluation = {\r\n  requestCount: number;\r\n  confirmed: number;\r\n  uniqueConfirmed: number;\r\n  waitlisted: number;\r\n  ignoredRetries: number;\r\n  duplicateOutcomes: number;\r\n  oversoldSeats: number;\r\n  missingAttendees: number;\r\n  occupancy: { room: string; used: number; capacity: number }[];\r\n  checks: Check[];\r\n};\r\nexport type Evidence = { id: string; summary: string; count: number };\r\nexport type Proposal = { repair: Repair; rationale: string; evidenceIds: string[] };\r\nexport type RepairRecord = Proposal & { round: 1 | 2; evidenceSnapshot: Evidence[] };\r\nexport type Verdict = { verdict: "accept" | "reject"; rationale: string; evidenceIds: string[] };\r\nexport type RunReport = {\r\n  version: string;\r\n  runId: string;\r\n  synthetic: true;\r\n  scenario: Scenario;\r\n  mode: "rehearsal" | "live";\r\n  seed: number;\r\n  status: "draft" | "approved";\r\n  policy: Policy;\r\n  before: Evaluation;\r\n  after: Evaluation;\r\n  repairs: RepairRecord[];\r\n  verificationRounds: number;\r\n  reviewer: Verdict;\r\n  note: string;\r\n};\r\nexport type TaskKind = "code" | "agent" | "worker" | "gate";\r\nexport type WorkflowEvent =\r\n  | { type: "phase"; id: string; title: string }\r\n  | { type: "task"; id: string; title: string; kind: TaskKind; state: "running" | "done" | "error"; dependsOn: string[]; detail: string }\r\n  | { type: "evidence"; id: string; title: string; evidence: Evidence[]; evaluation: Evaluation }\r\n  | { type: "branch"; id: string; title: string; repair: Repair; reason: string }\r\n  | { type: "verification"; id: string; title: string; evaluation: Evaluation; round: number }\r\n  | { type: "twist"; id: string; title: string; detail: string }\r\n  | { type: "ready"; id: string; report: RunReport }\r\n  | { type: "complete"; id: string; report: RunReport };\r\nexport type EventSink = (event: WorkflowEvent) => Promise<void>;\r\nexport type RunContext = Pick<WorkflowContext, "runId" | "args" | "signal" | "phase" | "log" | "step" | "parallel" | "agent" | "pause">;\r\n\r\nexport class WorkflowError extends Error {\r\n  constructor(message: string) {\r\n    super(message);\r\n    this.name = "WorkflowError";\r\n  }\r\n}\r\n\r\nexport function isRecord(value: unknown): value is Record<string, unknown> {\r\n  return typeof value === "object" && value !== null && !Array.isArray(value);\r\n}\r\n\r\nexport function isJsonValue(value: unknown, depth = 0): value is JsonValue {\r\n  if (depth > 30) return false;\r\n  if (value === null || typeof value === "string" || typeof value === "boolean") return true;\r\n  if (typeof value === "number") return Number.isFinite(value);\r\n  if (Array.isArray(value)) return value.every((item: unknown) => isJsonValue(item, depth + 1));\r\n  return isRecord(value) && Object.values(value).every((item) => isJsonValue(item, depth + 1));\r\n}\r\n\r\nexport function validateArgs(value: unknown): WorkflowArgs {\r\n  if (!isRecord(value)) throw new WorkflowError("Workflow inputs must be a JSON object.");\r\n  const allowed = new Set(["scenario", "mode", "seed", "pauseForApproval"]);\r\n  if (Object.keys(value).some((key) => !allowed.has(key))) {\r\n    throw new WorkflowError("Unknown workflow input. Allowed: scenario, mode, seed, pauseForApproval.");\r\n  }\r\n  const scenario = value.scenario ?? "mixed";\r\n  const mode = value.mode ?? "rehearsal";\r\n  const seed = value.seed ?? 42;\r\n  const pauseForApproval = value.pauseForApproval ?? true;\r\n  if (scenario !== "retries" && scenario !== "capacity" && scenario !== "parallel" && scenario !== "mixed") {\r\n    throw new WorkflowError("Choose retries, capacity, parallel, or mixed.");\r\n  }\r\n  if (mode !== "rehearsal" && mode !== "live") throw new WorkflowError("Mode must be rehearsal or live.");\r\n  if (typeof seed !== "number" || !Number.isSafeInteger(seed) || seed < 1 || seed > 9999999) {\r\n    throw new WorkflowError("Seed must be an integer from 1 to 9999999.");\r\n  }\r\n  if (typeof pauseForApproval !== "boolean") throw new WorkflowError("pauseForApproval must be boolean.");\r\n  return { scenario, mode, seed, pauseForApproval };\r\n}\r\n\r\nexport function makeFixture(args: WorkflowArgs, roomChanged = false): Fixture {\r\n  let state = args.seed >>> 0;\r\n  const random = () => {\r\n    state = (Math.imul(1664525, state) + 1013904223) >>> 0;\r\n    return state / 4294967296;\r\n  };\r\n  const tickets = Array.from({ length: ATTENDEES }, (_, index) => `ATT-${String(index + 1).padStart(4, "0")}`);\r\n  for (let index = tickets.length - 1; index > 0; index--) {\r\n    const other = Math.floor(random() * (index + 1));\r\n    const left = tickets[index];\r\n    const right = tickets[other];\r\n    if (left === undefined || right === undefined) throw new WorkflowError("Synthetic fixture construction failed.");\r\n    tickets[index] = right;\r\n    tickets[other] = left;\r\n  }\r\n  const requests: Request[] = [];\r\n  tickets.forEach((ticket, index) => {\r\n    requests.push({ ticket });\r\n    if (args.scenario !== "capacity" && index % 5 === 0) requests.push({ ticket });\r\n  });\r\n  const reduced = args.scenario === "capacity" || args.scenario === "parallel" || roomChanged;\r\n  return {\r\n    tickets,\r\n    requests,\r\n    rooms: [\r\n      { id: "hall", label: "Main hall", declaredCapacity: 1800, capacity: reduced ? 1600 : 1800 },\r\n      { id: "studio", label: "Studio", declaredCapacity: 700, capacity: 700 },\r\n    ],\r\n  };\r\n}\r\n\r\nexport function allocate(fixture: Fixture, policy: Policy): { outcomes: Allocation[]; ignoredRetries: number } {\r\n  const seen = new Set<string>();\r\n  const used = new Map(fixture.rooms.map((room) => [room.id, 0]));\r\n  const outcomes: Allocation[] = [];\r\n  let ignoredRetries = 0;\r\n  const hall = fixture.rooms[0];\r\n  const studio = fixture.rooms[1];\r\n  if (!hall || !studio) throw new WorkflowError("The synthetic fixture needs both rooms.");\r\n\r\n  for (const request of fixture.requests) {\r\n    if (policy.dedupe && seen.has(request.ticket)) {\r\n      ignoredRetries++;\r\n      continue;\r\n    }\r\n    seen.add(request.ticket);\r\n    let room: Room | undefined;\r\n    if (policy.capacity) {\r\n      room = fixture.rooms.find((candidate) => (used.get(candidate.id) ?? 0) < candidate.capacity);\r\n    } else {\r\n      room = (used.get(hall.id) ?? 0) < hall.declaredCapacity ? hall : studio;\r\n    }\r\n    if (room) used.set(room.id, (used.get(room.id) ?? 0) + 1);\r\n    outcomes.push({ ticket: request.ticket, room: room?.id ?? null });\r\n  }\r\n  return { outcomes, ignoredRetries };\r\n}\r\n\r\nexport function evaluate(fixture: Fixture, policy: Policy): Evaluation {\r\n  const { outcomes, ignoredRetries } = allocate(fixture, policy);\r\n  const counts = new Map<string, number>();\r\n  const confirmedTickets = new Set<string>();\r\n  const waitlistedTickets = new Set<string>();\r\n  const occupancy = fixture.rooms.map((room) => ({ room: room.label, used: 0, capacity: room.capacity }));\r\n  let confirmed = 0;\r\n  for (const outcome of outcomes) {\r\n    counts.set(outcome.ticket, (counts.get(outcome.ticket) ?? 0) + 1);\r\n    if (outcome.room !== null) {\r\n      confirmed++;\r\n      confirmedTickets.add(outcome.ticket);\r\n      const index = fixture.rooms.findIndex((room) => room.id === outcome.room);\r\n      const occupied = occupancy[index];\r\n      if (!occupied) throw new WorkflowError("Allocator returned an unknown room.");\r\n      occupied.used++;\r\n    } else {\r\n      waitlistedTickets.add(outcome.ticket);\r\n    }\r\n  }\r\n  const duplicateOutcomes = [...counts.values()].reduce((sum, count) => sum + Math.max(0, count - 1), 0);\r\n  const oversoldSeats = occupancy.reduce((sum, room) => sum + Math.max(0, room.used - room.capacity), 0);\r\n  const missingAttendees = fixture.tickets.filter((ticket) => !counts.has(ticket)).length;\r\n  return {\r\n    requestCount: fixture.requests.length,\r\n    confirmed,\r\n    uniqueConfirmed: confirmedTickets.size,\r\n    waitlisted: waitlistedTickets.size,\r\n    ignoredRetries,\r\n    duplicateOutcomes,\r\n    oversoldSeats,\r\n    missingAttendees,\r\n    occupancy,\r\n    checks: [\r\n      { id: "C-UNIQUE", title: "One outcome per attendee", passed: duplicateOutcomes === 0, detail: `${duplicateOutcomes} duplicate outcomes` },\r\n      { id: "C-CAPACITY", title: "Never exceed room capacity", passed: oversoldSeats === 0, detail: `${oversoldSeats} seats over capacity` },\r\n      { id: "C-COVERAGE", title: "No attendee disappears", passed: missingAttendees === 0, detail: `${missingAttendees} missing attendees` },\r\n    ],\r\n  };\r\n}\r\n\r\nexport function inspectRequests(fixture: Fixture): Evidence {\r\n  const distinct = new Set(fixture.requests.map((request) => request.ticket)).size;\r\n  const count = fixture.requests.length - distinct;\r\n  return { id: "E-RETRY", count, summary: `${fixture.requests.length} requests represent ${distinct} attendees; ${count} are retries.` };\r\n}\r\n\r\nexport function inspectInventory(fixture: Fixture): Evidence {\r\n  const count = fixture.rooms.reduce((sum, room) => sum + Math.max(0, room.declaredCapacity - room.capacity), 0);\r\n  return { id: "E-INVENTORY", count, summary: `Published inventory exceeds current room capacity by ${count} seats.` };\r\n}\r\n\r\nfunction validateEvidence(value: unknown): Evidence {\r\n  if (!isRecord(value) || typeof value.id !== "string" || typeof value.summary !== "string"\r\n      || typeof value.count !== "number" || !Number.isSafeInteger(value.count) || value.count < 0) {\r\n    throw new WorkflowError("Saved evidence is invalid. Start a fresh run.");\r\n  }\r\n  return { id: value.id, summary: value.summary, count: value.count };\r\n}\r\n\r\nexport function validateEvaluation(value: unknown): Evaluation {\r\n  if (!isRecord(value)) throw new WorkflowError("Saved verification is not an object.");\r\n  const fields = ["requestCount", "confirmed", "uniqueConfirmed", "waitlisted", "ignoredRetries",\r\n    "duplicateOutcomes", "oversoldSeats", "missingAttendees"] as const;\r\n  for (const field of fields) {\r\n    if (typeof value[field] !== "number" || !Number.isSafeInteger(value[field]) || value[field] < 0) {\r\n      throw new WorkflowError(`Invalid saved verification field: ${field}.`);\r\n    }\r\n  }\r\n  if (!Array.isArray(value.checks) || value.checks.length !== 3 || !Array.isArray(value.occupancy) || value.occupancy.length !== 2) {\r\n    throw new WorkflowError("Saved verification has an invalid shape.");\r\n  }\r\n  const checks = value.checks.map((check: unknown): Check => {\r\n    if (!isRecord(check) || typeof check.id !== "string" || typeof check.title !== "string"\r\n      || typeof check.passed !== "boolean" || typeof check.detail !== "string") {\r\n      throw new WorkflowError("Invalid saved contract check.");\r\n    }\r\n    return { id: check.id, title: check.title, passed: check.passed, detail: check.detail };\r\n  });\r\n  const occupancy = value.occupancy.map((room: unknown) => {\r\n    if (!isRecord(room) || typeof room.room !== "string" || typeof room.used !== "number"\r\n      || typeof room.capacity !== "number" || !Number.isSafeInteger(room.used) || !Number.isSafeInteger(room.capacity)\r\n      || room.used < 0 || room.capacity < 0) throw new WorkflowError("Invalid saved occupancy.");\r\n    return { room: room.room, used: room.used, capacity: room.capacity };\r\n  });\r\n  const expected = [\r\n    ["C-UNIQUE", value.duplicateOutcomes === 0],\r\n    ["C-CAPACITY", value.oversoldSeats === 0],\r\n    ["C-COVERAGE", value.missingAttendees === 0],\r\n  ];\r\n  if (checks.some((check, index) => check.id !== expected[index]?.[0] || check.passed !== expected[index]?.[1])\r\n      || occupancy.reduce((sum, room) => sum + room.used, 0) !== value.confirmed\r\n      || occupancy.reduce((sum, room) => sum + Math.max(0, room.used - room.capacity), 0) !== value.oversoldSeats) {\r\n    throw new WorkflowError("Saved check flags do not agree with measured outcomes.");\r\n  }\r\n  // The range checks above narrow values at runtime; construct each numeric field explicitly.\r\n  return {\r\n    requestCount: Number(value.requestCount), confirmed: Number(value.confirmed),\r\n    uniqueConfirmed: Number(value.uniqueConfirmed), waitlisted: Number(value.waitlisted),\r\n    ignoredRetries: Number(value.ignoredRetries), duplicateOutcomes: Number(value.duplicateOutcomes),\r\n    oversoldSeats: Number(value.oversoldSeats), missingAttendees: Number(value.missingAttendees), occupancy, checks,\r\n  };\r\n}\r\n\r\nfunction validateExplanation(value: unknown, evidenceIds: string[]): { rationale: string; evidenceIds: string[] } {\r\n  if (!isRecord(value) || typeof value.rationale !== "string" || value.rationale.trim().length < 12\r\n      || value.rationale.length > 1200 || !Array.isArray(value.evidenceIds)\r\n      || value.evidenceIds.length < 1 || value.evidenceIds.length > evidenceIds.length) {\r\n    throw new WorkflowError("Agent explanation is missing or outside the demo\'s semantic constraints.");\r\n  }\r\n  const ids: string[] = [];\r\n  for (const id of value.evidenceIds) {\r\n    if (typeof id !== "string" || !evidenceIds.includes(id) || ids.includes(id)) {\r\n      throw new WorkflowError("Agent cited unknown or duplicate evidence. Candidate held.");\r\n    }\r\n    ids.push(id);\r\n  }\r\n  return { rationale: value.rationale.trim(), evidenceIds: ids };\r\n}\r\n\r\nexport function validateProposal(value: unknown, repair: Repair, evidence: Evidence[]): Proposal {\r\n  const explanation = validateExplanation(value, evidence.map((item) => item.id));\r\n  if (!isRecord(value) || value.repair !== repair) {\r\n    throw new WorkflowError(`Specialist must return the bounded ${repair} repair; candidate held.`);\r\n  }\r\n  const required = repair === "dedupe" ? "E-RETRY" : "E-INVENTORY";\r\n  if (!explanation.evidenceIds.includes(required)) throw new WorkflowError("Specialist did not cite its required evidence.");\r\n  return { repair, ...explanation };\r\n}\r\n\r\nfunction scopedEvidence(repair: Repair, evidence: Evidence[]): Evidence[] {\r\n  const required = repair === "dedupe" ? "E-RETRY" : "E-INVENTORY";\r\n  const snapshot = evidence.filter((item) => item.id === required).map((item) => ({ ...item }));\r\n  if (snapshot.length !== 1 || snapshot[0]?.count === 0) {\r\n    throw new WorkflowError("A specialist requires exactly one actionable evidence snapshot.");\r\n  }\r\n  return snapshot;\r\n}\r\n\r\nexport function validateRepairRecord(value: unknown, repair: Repair, round: 1 | 2, expected: Evidence[]): RepairRecord {\r\n  if (!isRecord(value) || value.round !== round || !Array.isArray(value.evidenceSnapshot)) {\r\n    throw new WorkflowError("Saved repair is missing its observation round or evidence snapshot.");\r\n  }\r\n  const snapshot = value.evidenceSnapshot.map(validateEvidence);\r\n  const required = scopedEvidence(repair, expected);\r\n  if (snapshot.length !== 1 || snapshot[0]?.id !== required[0]?.id\r\n      || snapshot[0]?.count !== required[0]?.count || snapshot[0]?.summary !== required[0]?.summary) {\r\n    throw new WorkflowError("Saved repair evidence does not match its observation round.");\r\n  }\r\n  return { ...validateProposal(value, repair, snapshot), round, evidenceSnapshot: snapshot };\r\n}\r\n\r\nexport function validateVerdict(value: unknown, evidence: Evidence[]): Verdict {\r\n  const explanation = validateExplanation(value, evidence.map((item) => item.id));\r\n  if (!isRecord(value) || (value.verdict !== "accept" && value.verdict !== "reject")) {\r\n    throw new WorkflowError("Reviewer returned no valid accept/reject verdict. Candidate held.");\r\n  }\r\n  return { verdict: value.verdict, ...explanation };\r\n}\r\n\r\nfunction proposalSchema(repair: Repair): WorkflowJsonSchema {\r\n  return {\r\n    type: "object", required: ["repair", "rationale", "evidenceIds"],\r\n    properties: {\r\n      repair: { type: "string", const: repair },\r\n      rationale: { type: "string" },\r\n      evidenceIds: { type: "array", items: { type: "string" } },\r\n    },\r\n  };\r\n}\r\n\r\nexport const VERDICT_SCHEMA: WorkflowJsonSchema = {\r\n  type: "object", required: ["verdict", "rationale", "evidenceIds"],\r\n  properties: {\r\n    verdict: { type: "string", enum: ["accept", "reject"] },\r\n    rationale: { type: "string" },\r\n    evidenceIds: { type: "array", items: { type: "string" } },\r\n  },\r\n};\r\n\r\nfunction localProposal(repair: Repair, evidence: Evidence[]): Proposal {\r\n  const id = repair === "dedupe" ? "E-RETRY" : "E-INVENTORY";\r\n  const finding = evidence.find((item) => item.id === id);\r\n  if (!finding || finding.count <= 0) throw new WorkflowError("No evidence supports this specialist branch.");\r\n  return {\r\n    repair,\r\n    rationale: repair === "dedupe"\r\n      ? `Use ticket identity as the idempotency key: ${finding.count} retry requests must reuse the first decision.`\r\n      : `Allocate against current inventory, not the published map: ${finding.count} unavailable seats must become a waitlist.`,\r\n    evidenceIds: [id],\r\n  };\r\n}\r\n\r\nfunction independentLedgerReview(fixture: Fixture, policy: Policy, evidence: Evidence[]): Verdict {\r\n  const { outcomes } = allocate(fixture, policy);\r\n  const remaining = new Map(fixture.rooms.map((room) => [room.id, room.capacity]));\r\n  const ledger = new Set<string>();\r\n  let valid = true;\r\n  for (const outcome of outcomes) {\r\n    if (ledger.has(outcome.ticket)) valid = false;\r\n    ledger.add(outcome.ticket);\r\n    if (outcome.room !== null) {\r\n      const available = remaining.get(outcome.room);\r\n      if (available === undefined || available < 1) valid = false;\r\n      else remaining.set(outcome.room, available - 1);\r\n    }\r\n  }\r\n  if (ledger.size !== ATTENDEES) valid = false;\r\n  return {\r\n    verdict: valid ? "accept" : "reject",\r\n    rationale: valid\r\n      ? "An independent ledger walk found one decision per attendee, respected each room\'s current capacity, and accounted for everyone."\r\n      : "The independent ledger walk found a duplicate, an unavailable seat, or a missing attendee.",\r\n    evidenceIds: evidence.map((item) => item.id),\r\n  };\r\n}\r\n\r\nfunction abortIfNeeded(ctx: RunContext): void {\r\n  if (ctx.signal.aborted) throw ctx.signal.reason ?? new WorkflowError("Run interrupted.");\r\n}\r\n\r\nexport async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise<RunReport> {\r\n  const args = validateArgs(ctx.args);\r\n  const initialFixture = makeFixture(args);\r\n  const policy: Policy = { dedupe: false, capacity: false };\r\n  const proposals: RepairRecord[] = [];\r\n  const kind: TaskKind = args.mode === "live" ? "agent" : "worker";\r\n  const phase = async (title: string) => {\r\n    abortIfNeeded(ctx);\r\n    ctx.phase(title);\r\n    await emit({ type: "phase", id: `phase:${title}`, title });\r\n  };\r\n  const task = async (\r\n    id: string, title: string, taskKind: TaskKind, dependsOn: string[],\r\n    producer: () => JsonValue | Promise<JsonValue>, detail = "",\r\n  ): Promise<JsonValue> => {\r\n    abortIfNeeded(ctx);\r\n    await emit({ type: "task", id, title, kind: taskKind, state: "running", dependsOn, detail });\r\n    let value: JsonValue;\r\n    try {\r\n      value = await ctx.step(`${VERSION}:${id}`, producer);\r\n    } catch (error) {\r\n      if (!ctx.signal.aborted) {\r\n        const message = error instanceof Error ? error.message : String(error);\r\n        ctx.log(`Failed ${title}: ${message}`);\r\n        await emit({ type: "task", id, title, kind: taskKind, state: "error", dependsOn, detail: message });\r\n      }\r\n      throw error;\r\n    }\r\n    abortIfNeeded(ctx);\r\n    await emit({ type: "task", id, title, kind: taskKind, state: "done", dependsOn, detail });\r\n    return value;\r\n  };\r\n  const specialist = async (repair: Repair, evidence: Evidence[], round: 1 | 2, dependency: string): Promise<RepairRecord> => {\r\n    const id = `${repair}-specialist-${round}`;\r\n    const title = repair === "dedupe" ? "Retry specialist" : "Capacity specialist";\r\n    const snapshot = scopedEvidence(repair, evidence);\r\n    const detail = args.mode === "live" ? "GPT-6.1 Sol / max" : "Local JavaScript worker / no LLM";\r\n    const value = await task(id, title, kind, [dependency], async () => {\r\n      if (args.mode === "rehearsal") return {\r\n        ...localProposal(repair, snapshot), round, evidenceSnapshot: snapshot,\r\n      };\r\n      const prompt = [\r\n        "Analyze this synthetic conference-launch fixture. Use no tools and do not delegate.",\r\n        `Observation round: ${round}. You see only your specialist\'s immutable evidence snapshot.`,\r\n        `Your bounded repair is ${repair}. Return repair, rationale, and evidenceIds.`,\r\n        repair === "dedupe" ? "Reuse the first decision by ticket ID."\r\n          : "Use current room inventory and waitlist excess attendees.",\r\n        "Discuss only your supplied evidence. Do not speculate about other components or claim tests pass.",\r\n        "Deterministic code verifies the choice. Cite only supplied evidence IDs.",\r\n        OUTPUT_CONTRACT,\r\n        `Evidence: ${JSON.stringify(snapshot)}`,\r\n      ].join("\\n");\r\n      const options: WorkflowAgentOptions = { ...ANALYST, label: id, schema: proposalSchema(repair) };\r\n      const result = await ctx.agent(prompt, options);\r\n      if (result === null) throw new WorkflowError(`${title} returned no usable result. Retry or use the labeled rehearsal.`);\r\n      return { ...validateProposal(result, repair, snapshot), round, evidenceSnapshot: snapshot };\r\n    }, detail);\r\n    return validateRepairRecord(value, repair, round, snapshot);\r\n  };\r\n\r\n  await phase("Observe");\r\n  await task("capture", "Capture synthetic launch", "code", [], () => ({\r\n    scenario: args.scenario, seed: args.seed, attendees: ATTENDEES, requests: initialFixture.requests.length,\r\n  }), "2,500 attendees / synthetic fixture");\r\n  const before = validateEvaluation(await task("baseline", "Reproduce the failure", "code", ["capture"],\r\n    () => evaluate(initialFixture, policy), "Execute the buggy allocator and three contract checks"));\r\n\r\n  await phase("Diagnose");\r\n  const scans = await ctx.parallel([\r\n    () => task("scan-retries", "Inspect request identities", "code", ["baseline"], () => inspectRequests(initialFixture)),\r\n    () => task("scan-inventory", "Audit room inventory", "code", ["baseline"], () => inspectInventory(initialFixture)),\r\n  ]);\r\n  if (scans.some((scan) => scan === null) || scans.length !== 2) {\r\n    throw new WorkflowError("Evidence collection failed. No specialist or release may proceed.");\r\n  }\r\n  const evidence = scans.map(validateEvidence);\r\n  await emit({ type: "evidence", id: "initial-evidence", title: "Evidence decides who joins",\r\n    evidence: evidence.map((item) => ({ ...item })), evaluation: before });\r\n  const needed: Repair[] = [];\r\n  if ((evidence.find((item) => item.id === "E-RETRY")?.count ?? 0) > 0) needed.push("dedupe");\r\n  if ((evidence.find((item) => item.id === "E-INVENTORY")?.count ?? 0) > 0) needed.push("capacity");\r\n  if (needed.length === 0) throw new WorkflowError("The selected synthetic incident contains no actionable evidence.");\r\n\r\n  await phase("Repair");\r\n  for (const repair of needed) {\r\n    await emit({ type: "branch", id: `branch:${repair}:1`, title: `Add ${repair === "dedupe" ? "retry" : "capacity"} specialist`,\r\n      repair, reason: "Observed evidence, not a fixed list of agents." });\r\n  }\r\n  const initialProposals = await ctx.parallel(needed.map((repair) => () => specialist(repair, evidence, 1,\r\n    repair === "dedupe" ? "scan-retries" : "scan-inventory")));\r\n  if (initialProposals.some((proposal) => proposal === null)) {\r\n    throw new WorkflowError("A required specialist failed. Candidate held; no silent substitute.");\r\n  }\r\n  initialProposals.forEach((proposal, index) => {\r\n    const repair = needed[index];\r\n    if (repair === undefined) throw new WorkflowError("Specialist result has no matching branch.");\r\n    const valid = validateRepairRecord(proposal, repair, 1, evidence);\r\n    proposals.push(valid);\r\n    policy[valid.repair] = true;\r\n  });\r\n  await task("candidate-1", "Assemble bounded repair", "code",\r\n    needed.map((repair) => `${repair}-specialist-1`), () => ({ ...policy }), "No generated code is executed");\r\n\r\n  await phase("Verify");\r\n  let fixture = initialFixture;\r\n  if (args.scenario === "mixed") {\r\n    await task("room-change", "Room inventory changes", "code", ["candidate-1"],\r\n      () => ({ removedSeats: 200, room: "Main hall" }), "Synthetic surprise after the first plan");\r\n    fixture = makeFixture(args, true);\r\n    await emit({ type: "twist", id: "twist", title: "Plot twist: 200 seats disappear",\r\n      detail: "A new room map arrives after planning. The old candidate must face the new evidence." });\r\n  }\r\n  let after = validateEvaluation(await task("verify-1", "Run acceptance checks", "code",\r\n    [args.scenario === "mixed" ? "room-change" : "candidate-1"], () => evaluate(fixture, policy)));\r\n  let verificationRounds = 1;\r\n  await emit({ type: "verification", id: "verification-1", title: "Code, not confidence, decides", evaluation: after, round: 1 });\r\n\r\n  if (!after.checks.every((check) => check.passed)) {\r\n    if (args.scenario !== "mixed" || after.duplicateOutcomes !== 0 || after.oversoldSeats !== 200) {\r\n      throw new WorkflowError("Candidate failed an unexpected acceptance check. Release held.");\r\n    }\r\n    const updatedInventory = validateEvidence(await task("rescan-inventory", "Read the new inventory", "code",\r\n      ["verify-1"], () => inspectInventory(fixture)));\r\n    const inventoryIndex = evidence.findIndex((item) => item.id === updatedInventory.id);\r\n    if (inventoryIndex < 0) throw new WorkflowError("Updated inventory has no original evidence ID.");\r\n    evidence[inventoryIndex] = updatedInventory;\r\n    await emit({ type: "branch", id: "branch:capacity:2", title: "Failed check adds a new specialist",\r\n      repair: "capacity", reason: "C-CAPACITY failed against the changed inventory. Replan only this branch." });\r\n    await phase("Adapt");\r\n    const repair = await specialist("capacity", evidence, 2, "rescan-inventory");\r\n    proposals.push(repair);\r\n    policy.capacity = true;\r\n    await task("candidate-2", "Revise the candidate", "code", ["capacity-specialist-2"],\r\n      () => ({ ...policy }), "Keep the verified retry repair; add current-inventory allocation");\r\n    await phase("Verify");\r\n    after = validateEvaluation(await task("verify-2", "Re-run acceptance checks", "code", ["candidate-2"],\r\n      () => evaluate(fixture, policy)));\r\n    verificationRounds = 2;\r\n    await emit({ type: "verification", id: "verification-2", title: "The adapted candidate passes", evaluation: after, round: 2 });\r\n  }\r\n  if (!after.checks.every((check) => check.passed)) throw new WorkflowError("Revised candidate failed. Release held.");\r\n\r\n  await phase("Challenge");\r\n  const reviewerDependency = verificationRounds === 2 ? "verify-2" : "verify-1";\r\n  const verdictValue = await task("reviewer", "Independent challenge", kind, [reviewerDependency], async () => {\r\n    if (args.mode === "rehearsal") return independentLedgerReview(fixture, policy, evidence);\r\n    const prompt = [\r\n      "Independently challenge this synthetic local release candidate. Use no tools or delegation.",\r\n      "Return verdict (accept/reject), rationale, evidenceIds. Cite only supplied evidence IDs.",\r\n      OUTPUT_CONTRACT,\r\n      "Reject if any contract check fails or the proposed policy is inconsistent with the evidence.",\r\n      "Every repair includes its observation round and immutable evidenceSnapshot.",\r\n      "Judge historical explanations against their own snapshots and the final policy against current evidence.",\r\n      args.scenario === "mixed"\r\n        ? "Inventory deliberately changed after round 1. Round 2 corrected that new fact; do not treat a correctly scoped round-1 observation as a contradiction."\r\n        : "Both the policy and explanations must be consistent with the supplied observations.",\r\n      "Do not claim production readiness, deployment, performance, or real ticket allocation.",\r\n      `Current evidence: ${JSON.stringify(evidence)}`,\r\n      `Repairs: ${JSON.stringify(proposals)}`,\r\n      `Policy: ${JSON.stringify(policy)}`,\r\n      `Acceptance checks and measured synthetic counts: ${JSON.stringify(after)}`,\r\n    ].join("\\n");\r\n    const result = await ctx.agent(prompt, { ...REVIEWER, label: "independent-review", schema: VERDICT_SCHEMA });\r\n    if (result === null) throw new WorkflowError("Independent reviewer returned no verdict. Candidate held.");\r\n    return validateVerdict(result, evidence);\r\n  }, args.mode === "live" ? "Sonnet 5.5 / high" : "Independent local ledger walk / no LLM");\r\n  const reviewer = validateVerdict(verdictValue, evidence);\r\n  if (reviewer.verdict !== "accept") throw new WorkflowError(`Independent reviewer held the candidate: ${reviewer.rationale}`);\r\n\r\n  await phase("Approve");\r\n  const report: RunReport = {\r\n    version: VERSION, runId: ctx.runId, synthetic: true, scenario: args.scenario, mode: args.mode,\r\n    seed: args.seed, status: "draft", policy: { ...policy }, before, after, repairs: proposals,\r\n    verificationRounds, reviewer,\r\n    note: "Synthetic local release candidate only. No deployment, real tickets, purchases, or remote writes.",\r\n  };\r\n  await task("approval", "Human review checkpoint", "gate", ["reviewer"],\r\n    () => ({ decision: "review-ready", checksPassed: after.checks.length }),\r\n    args.pauseForApproval ? "Pause, inspect, then resume the same run" : "Draft-only run; no approval claimed");\r\n  await emit({ type: "ready", id: "ready", report: structuredClone(report) });\r\n  ctx.log(`All ${after.checks.length} checks pass. ${after.uniqueConfirmed} confirmed, ${after.waitlisted} waitlisted. Synthetic only.`);\r\n  if (args.pauseForApproval) {\r\n    await ctx.pause(`${VERSION}:approve-local-draft`);\r\n    abortIfNeeded(ctx);\r\n    report.status = "approved";\r\n  }\r\n  await phase("Complete");\r\n  await emit({ type: "complete", id: "complete", report: structuredClone(report) });\r\n  return report;\r\n}\r\n');
+  window.addEventListener("resize", scheduleRender);
+  restore();
+  render();
+})();
+</script>
+</body>
+</html>

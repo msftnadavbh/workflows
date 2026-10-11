@@ -1,0 +1,217 @@
+{
+  "checkedOn": "2026-10-10",
+  "localCliVersion": "1.0.94-3",
+  "sdkVersion": "1.0.19",
+  "nativeSdkRuntimeVersion": "1.0.95",
+  "ghAwReleaseObserved": "0.89.21",
+  "sources": [
+    {
+      "id": "S1",
+      "title": "Dynamic workflows",
+      "url": "https://docs.github.com/en/copilot/concepts/agents/dynamic-workflows",
+      "findings": [
+        "Public preview, available in Copilot app, CLI, and SDK, subject to billing-plan eligibility.",
+        "Workflow code defines steps, conditions, handoffs, and when agents are involved.",
+        "Autopilot controls autonomy; fleet lets the model decompose work; a dynamic workflow defines a reusable process in code.",
+        "Extension code can run outside subagent permission prompts.",
+        "AI-credit limits are approximate post-paid limits, not hard ceilings."
+      ]
+    },
+    {
+      "id": "S2",
+      "title": "Using dynamic workflows",
+      "url": "https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-dynamic-workflows",
+      "findings": [
+        "CLI requires experimental features.",
+        "Project definitions are extension.mjs files beneath .github/extensions.",
+        "Run by name from a prompt or with copilot workflow run.",
+        "The /workflows command and app Workflows panel expose progress and resume.",
+        "App run monitoring is available only for local sessions.",
+        "Copying an extension shares its definition, not its history or saved run state."
+      ]
+    },
+    {
+      "id": "S3",
+      "title": "Official SDK: Dynamic Workflows",
+      "url": "https://github.com/github/copilot-sdk/blob/v1.0.19/nodejs/docs/workflows.md",
+      "findings": [
+        "defineWorkflow and joinSession register an extension workflow.",
+        "ctx.agent supports schema, model, reasoningEffort, agent, contextTier, and label.",
+        "Ordinary agent failures return null; cancellation and hard runtime failures reject.",
+        "ctx.step journals by key alone; producers must return JSON and should be idempotent.",
+        "ctx.pause creates a durable one-shot checkpoint; resume restarts the body using saved steps.",
+        "Structured output validates a subset of JSON Schema; numeric ranges and additionalProperties are not enforced.",
+        "Identical prompt/options calls are memoized; unique labels distinguish independent agents.",
+        "Nested workflows are not supported."
+      ]
+    },
+    {
+      "id": "S4",
+      "title": "Official SDK: Copilot CLI Extensions",
+      "url": "https://github.com/github/copilot-sdk/blob/v1.0.19/nodejs/docs/extensions.md",
+      "findings": [
+        "Extensions run in separate Node.js processes over JSON-RPC stdio.",
+        "Copilot injects @github/copilot-sdk; project users need not install the SDK for the extension.",
+        "Sensitive environment variables are stripped unless explicitly requested and approved."
+      ]
+    },
+    {
+      "id": "S5",
+      "title": "CLI programmatic reference",
+      "url": "https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-programmatic-reference",
+      "findings": [
+        "Direct workflow runs do not show permission prompts; configure required permissions beforehand.",
+        "GITHUB_COPILOT_PROMPT_MODE_EXTENSIONS=true opts into running trusted project extension code for that invocation.",
+        "Only successful runs with a result update --result-file; stale result files can survive failed runs.",
+        "Paused runs use exit code 1, completed runs 0, and unknown workflows or invalid arguments 2."
+      ]
+    },
+    {
+      "id": "S6",
+      "title": "Running tasks in parallel with /fleet",
+      "url": "https://docs.github.com/en/copilot/concepts/agents/copilot-cli/fleet",
+      "findings": [
+        "The main agent decides decomposition and coordinates dependencies.",
+        "Independent subtasks may run in parallel, each with a separate context window.",
+        "Fleet may increase AI-credit use and offers no inherent benefit for sequential work."
+      ]
+    },
+    {
+      "id": "S7",
+      "title": "Allowing Copilot CLI to work autonomously",
+      "url": "https://docs.github.com/en/copilot/concepts/agents/copilot-cli/autopilot",
+      "findings": [
+        "Autopilot continues through successive steps until complete, blocked, interrupted, or limited.",
+        "Autonomy is distinct from tool/path/URL permissions.",
+        "Wide permission grants require care and are not a substitute for a sandbox."
+      ]
+    },
+    {
+      "id": "S8",
+      "title": "Working with agent sessions in the Copilot app",
+      "url": "https://docs.github.com/en/copilot/how-tos/github-copilot-app/agent-sessions",
+      "findings": [
+        "The app supports parallel sessions, worktree/local/cloud locations, modes, models, and reasoning effort.",
+        "Isolation depends on the chosen execution location; a folder/local session is not an isolated worktree.",
+        "The app is built on Copilot CLI."
+      ]
+    },
+    {
+      "id": "S9",
+      "title": "Creating and using custom agents for CLI",
+      "url": "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/create-custom-agents-for-cli",
+      "findings": [
+        "Custom profiles use .agent.md files in .github/agents or the personal agents directory.",
+        "CLI personal profiles take precedence over same-ID repository profiles.",
+        "Subagents do not follow repository custom instructions by default; include-custom-instructions is opt-in."
+      ]
+    },
+    {
+      "id": "S10",
+      "title": "Custom agents configuration",
+      "url": "https://docs.github.com/en/copilot/reference/custom-agents-configuration",
+      "findings": [
+        "Tools can be restricted; tools: [] disables all tools.",
+        "Model availability and environment-specific profile behavior must be checked in the actual client.",
+        "The CLI-specific precedence documented in S9 should not be replaced with cloud-agent precedence rules."
+      ]
+    },
+    {
+      "id": "S11",
+      "title": "Using automations in the Copilot app",
+      "url": "https://docs.github.com/en/copilot/how-tos/github-copilot-app/using-automations",
+      "findings": [
+        "Local and cloud automations support recurring or on-demand agent tasks.",
+        "Cloud automation requires applicable repository and organization policies.",
+        "Saving a trigger is not the same as authoring a dynamic workflow."
+      ]
+    },
+    {
+      "id": "S12",
+      "title": "Repository configuration for the Copilot app",
+      "url": "https://docs.github.com/en/copilot/reference/github-copilot-app-reference/repository-configuration",
+      "findings": [
+        ".github/github-app.yml controls project instructions, scripts, server detection, and automation behavior.",
+        "Repository configuration must be reviewed and trusted before it applies.",
+        "App scripts receive credentials; never log or persist their environment."
+      ]
+    },
+    {
+      "id": "S13",
+      "title": "GitHub Agentic Workflows: About",
+      "url": "https://github.github.com/gh-aw/about/",
+      "findings": [
+        "gh-aw is a separate open-source GitHub CLI extension for AI-powered automation on GitHub Actions.",
+        "Markdown with YAML frontmatter compiles to a .lock.yml Actions workflow.",
+        "It complements deterministic CI rather than replacing it."
+      ]
+    },
+    {
+      "id": "S14",
+      "title": "How GitHub Agentic Workflows work",
+      "url": "https://github.github.com/gh-aw/introduction/how-they-work/",
+      "findings": [
+        "Actions supplies triggers, runners, logs, and job orchestration.",
+        "AI engines include Copilot, Claude, Codex, Gemini, and Pi.",
+        "Agent jobs have minimal read-only permissions by default; configured safe outputs apply writes separately."
+      ]
+    },
+    {
+      "id": "S15",
+      "title": "GitHub Agentic Workflows security architecture",
+      "url": "https://github.github.com/gh-aw/introduction/architecture/",
+      "findings": [
+        "Defense in depth includes compilation validation, runtime isolation, permission separation, network controls, and output handling.",
+        "Controls are configurable; safe outputs do not make untrusted instructions safe by definition.",
+        "Review generated workflow permissions and require human review for consequential changes."
+      ]
+    },
+    {
+      "id": "S16",
+      "title": "GitHub Agentic Workflows safe outputs",
+      "url": "https://github.github.com/gh-aw/reference/safe-outputs/",
+      "findings": [
+        "Configured operations are validated and applied by scoped jobs.",
+        "A safe output is a constrained write mechanism, not a proof of correctness."
+      ]
+    },
+    {
+      "id": "S17",
+      "title": "About agent skills",
+      "url": "https://docs.github.com/en/copilot/concepts/agents/about-agent-skills",
+      "findings": [
+        "Skills package task-specific instructions and optional resources.",
+        "Skills do not themselves provide the durability or runtime semantics of a dynamic workflow."
+      ]
+    },
+    {
+      "id": "S18",
+      "title": "VS Code agents overview",
+      "url": "https://code.visualstudio.com/docs/copilot/agents/overview",
+      "findings": [
+        "Editor agents are another Copilot surface.",
+        "Do not promise identical CLI/app workflow APIs or monitoring UI in every editor."
+      ]
+    },
+    {
+      "id": "S19",
+      "title": "Official SDK: custom agents and sub-agent orchestration",
+      "url": "https://github.com/github/copilot-sdk/blob/v1.0.19/docs/features/custom-agents.md",
+      "findings": [
+        "SDK sessions explicitly accept customAgents with names, prompts, scoped tools, models, and reasoning effort.",
+        "The delivered SDK host loads the repository prompts into explicit tools: [] profiles.",
+        "Runtime model resolution is checked before a proposal is accepted; fallback is not allowed."
+      ]
+    },
+    {
+      "id": "S20",
+      "title": "Official SDK: workflow end-to-end tests",
+      "url": "https://github.com/github/copilot-sdk/blob/v1.0.19/nodejs/test/e2e/workflow.e2e.test.ts",
+      "findings": [
+        "Standalone SDK extension hosting needs an explicit extension launch provider and SDK injection path.",
+        "The official bootstrap supplies SDK resolution and a parent-process lifecycle watchdog.",
+        "The delivered host restricts its launch provider to the exact project:launch-rescue entrypoint."
+      ]
+    }
+  ]
+}

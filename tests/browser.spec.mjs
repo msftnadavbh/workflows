@@ -1,0 +1,338 @@
+import { test, expect } from "@playwright/test";
+import { mkdir } from "node:fs/promises";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { runLaunchRescue, validateArgs } from "../dist/core.mjs";
+import { LocalContext, newJournal } from "../dist/local-context.mjs";
+
+async function nativeFixture(overrides = {}) {
+  const args = validateArgs({ scenario: "capacity", mode: "rehearsal", pauseForApproval: false });
+  const context = new LocalContext(newJournal(args, "native-regression"));
+  const events = [];
+  const report = await runLaunchRescue(context, async (event) => { events.push(event); });
+  return {
+    engine: "copilot-runtime", runId: context.runId, sessionId: "regression-session",
+    controller: "sdk-terminal", args, status: "completed", phase: "Complete",
+    updatedAt: "2026-10-10T21:00:00.000Z", events, report, error: null, ...overrides,
+  };
+}
+
+async function begin(page, scenario) {
+  await page.goto("/?scoutTheme=dark");
+  await page.getByLabel("Presentation pacing").selectOption("0");
+  await page.locator(`[data-scenario="${scenario}"]`).click();
+  await page.getByRole("button", { name: "Run rescue", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
+}
+
+for (const [scenario, confirmed, waitlisted] of [
+  ["retries", "2,500", "0 waitlisted"], ["capacity", "2,300", "200 waitlisted"],
+  ["parallel", "2,300", "200 waitlisted"], ["mixed", "2,300", "200 waitlisted"],
+]) {
+  test(`${scenario}: complete a real browser run and approve the local draft`, async ({ page }) => {
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await begin(page, scenario);
+    await expect(page.locator("#mode-label")).toHaveText("OFFLINE REHEARSAL");
+    await expect(page.locator("#mode-description")).toContainText("No LLM calls");
+    await expect(page.locator("#confirmed-count")).toHaveText(confirmed);
+    await expect(page.locator("#waitlist-count")).toContainText(waitlisted);
+    await expect(page.locator("#checks-total")).toHaveText("3 / 3 pass");
+    await expect(page.locator("#duplicate-count")).toHaveText("0");
+    await expect(page.locator("#oversold-count")).toHaveText("0");
+    await expect(page.locator('[data-task="scan-retries"] .graph-status')).toHaveText("Completed");
+    await expect(page.locator('[data-task="scan-inventory"] .graph-status')).toHaveText("Completed");
+    await expect(page.locator('[data-task="reviewer"] .graph-status')).toHaveText("Completed");
+    if (scenario === "mixed") await expect(page.locator('[data-task="capacity-specialist-2"]')).toBeVisible();
+    if (scenario === "mixed") await expect(page.locator('[data-task="rescan-inventory"]')).toBeVisible();
+    if (scenario === "parallel") {
+      await expect(page.locator('[data-task="dedupe-specialist-1"]')).toBeVisible();
+      await expect(page.locator('[data-task="capacity-specialist-1"]')).toBeVisible();
+    }
+    await page.getByRole("button", { name: "Approve local draft", exact: true }).click();
+    await expect(page.locator("#status-label")).toHaveText("Draft approved");
+    await page.reload();
+    await expect(page.locator("#status-label")).toHaveText("Draft approved");
+    expect(errors).toEqual([]);
+  });
+}
+
+test("pause, reload, and resume preserve a saved run", async ({ page }) => {
+  await page.goto("/?scoutTheme=dark");
+  await page.getByRole("button", { name: "Run rescue", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Running");
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Paused");
+  await expect(page.getByRole("button", { name: "Room switch", exact: true })).toBeDisabled();
+  await page.reload();
+  await expect(page.locator("#status-label")).toHaveText("Paused");
+  await page.getByLabel("Presentation pacing").selectOption("0");
+  await page.getByRole("button", { name: "Resume saved run", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
+});
+
+test("hold survives reload and does not imply approval", async ({ page }) => {
+  await begin(page, "mixed");
+  await page.getByRole("button", { name: "Keep on hold", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("On hold");
+  await page.reload();
+  await expect(page.locator("#status-label")).toHaveText("On hold");
+  await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
+});
+
+test("invalid input is an explicit error, not a successful fallback", async ({ page }) => {
+  await page.goto("/");
+  await page.getByText("How to present this demo", { exact: true }).click();
+  await page.getByLabel("Synthetic fixture seed").fill("0");
+  await page.getByRole("button", { name: "Run rescue", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Seed must be");
+  await expect(page.locator("#status-label")).toHaveText("Held / error");
+  await expect(page.locator("#checks-total")).toHaveText("0 / 3 run");
+});
+
+test("actual evidence downloads as JSON with honest execution labeling", async ({ page }) => {
+  await begin(page, "retries");
+  const downloaded = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download evidence", exact: true }).click();
+  const download = await downloaded;
+  expect(download.suggestedFilename()).toMatch(/^launch-rescue-.*\.json$/);
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  const result = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  expect(result.engine).toBe("standalone-rehearsal");
+  expect(result.report.synthetic).toBe(true);
+  expect(result.report.status).toBe("draft");
+  expect(result.report.after.uniqueConfirmed).toBe(2500);
+});
+
+test("native observation cannot approve a native checkpoint from the browser", async ({ page }) => {
+  await page.route("**/api/native/latest", async (route) => {
+    await route.fulfill({ json: { run: { engine: "copilot-runtime", runId: "test-native-observer", sessionId: "test-owning-session",
+      controller: "copilot-session",
+      args: { scenario: "parallel", mode: "live", seed: 42, pauseForApproval: true },
+      status: "running", phase: "Observe", updatedAt: "2026-10-10T18:00:00.000Z",
+      events: [{ type: "phase", id: "phase:Observe", title: "Observe" }],
+      report: null, error: null } } });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await expect(page.locator("#mode-label")).toHaveText("NATIVE COPILOT / LIVE RUN");
+  await expect(page.getByRole("button", { name: "Show run command", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
+  await expect(page.getByRole("button", { name: "Offline rehearsal", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Offline rehearsal", exact: true }).click();
+  await expect(page.locator("#mode-label")).toHaveText("OFFLINE REHEARSAL");
+});
+
+test("the portable HTML executes offline directly from file:// and preserves its checkpoint", async ({ page }) => {
+  const requests = [];
+  page.on("request", (request) => { if (/^https?:/.test(request.url())) requests.push(request.url()); });
+  await page.goto(`${pathToFileURL(resolve("Launch-Rescue-Demo.html")).href}?scoutTheme=dark`);
+  await page.getByLabel("Presentation pacing").selectOption("0");
+  await page.getByRole("button", { name: "Run rescue", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
+  await expect(page.locator("#confirmed-count")).toHaveText("2,300");
+  await page.reload();
+  await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
+  await page.getByRole("button", { name: "Approve local draft", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Draft approved");
+  expect(requests).toEqual([]);
+});
+
+test("native cancellation never appears as a resumable pause", async ({ page }) => {
+  await page.route("**/api/native/latest", async (route) => {
+    await route.fulfill({ json: { run: { engine: "copilot-runtime", runId: "cancelled-native", sessionId: "owning-native",
+      controller: "copilot-session", args: { scenario: "mixed", mode: "live", seed: 42, pauseForApproval: true },
+      status: "cancelled", phase: "Repair", updatedAt: "2026-10-10T18:00:00.000Z", events: [], report: null, error: null } } });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Cancelled");
+  await expect(page.locator("#native-command")).not.toContainText("--resume");
+  await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
+});
+
+test("SDK checkpoints direct review to the owning terminal, not browser or CLI resume", async ({ page }) => {
+  await page.route("**/api/native/latest", async (route) => {
+    await route.fulfill({ json: { run: { engine: "copilot-runtime", runId: "sdk-paused", sessionId: "sdk-session",
+      controller: "sdk-terminal", args: { scenario: "mixed", mode: "live", seed: 42, pauseForApproval: true },
+      status: "paused", phase: "Approve", updatedAt: "2026-10-10T18:00:00.000Z", events: [], report: null, error: null } } });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await expect(page.locator("#native-command")).toContainText("running SDK terminal");
+  await expect(page.locator("#native-command")).not.toContainText("--resume");
+  await expect(page.locator("#copy-command")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
+});
+
+test("completed native draft-only runs never invite approval in a closed terminal", async ({ page }) => {
+  const snapshot = await nativeFixture();
+  await page.route("**/api/native/latest", (route) => route.fulfill({ json: { run: snapshot } }));
+  await page.goto("/");
+  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Draft complete");
+  await expect(page.locator("#approval-detail")).not.toContainText("type APPROVE");
+  await expect(page.locator('[data-task="approval"] .graph-status')).not.toContainText("Awaiting human review");
+  await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
+});
+
+test("a recovered observer clears the old error even when the snapshot is unchanged", async ({ page }) => {
+  const snapshot = await nativeFixture();
+  let calls = 0;
+  await page.route("**/api/native/latest", async (route) => {
+    calls++;
+    await route.fulfill(calls === 2 ? { status: 500, json: { error: "Temporary outage" } }
+      : { json: { run: snapshot } });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Draft complete");
+  await expect(page.getByRole("alert")).toContainText("HTTP 500");
+  await expect.poll(() => calls).toBeGreaterThanOrEqual(3);
+  await expect(page.getByRole("alert")).toBeHidden();
+});
+
+test("native polling never overlaps requests on a slow observer", async ({ page }) => {
+  const snapshot = await nativeFixture();
+  let active = 0;
+  let peak = 0;
+  let calls = 0;
+  await page.route("**/api/native/latest", async (route) => {
+    active++;
+    peak = Math.max(peak, active);
+    calls++;
+    if (calls === 1) await new Promise((done) => setTimeout(done, 1900));
+    await route.fulfill({ json: { run: snapshot } });
+    active--;
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Draft complete");
+  expect(peak).toBe(1);
+});
+
+test("an older native snapshot cannot regress the current completed run", async ({ page }) => {
+  const completed = await nativeFixture();
+  const earlier = { ...completed, status: "running", phase: "Observe", report: null,
+    updatedAt: "2026-10-10T20:00:00.000Z", events: [] };
+  let calls = 0;
+  await page.route("**/api/native/latest", (route) => {
+    calls++;
+    return route.fulfill({ json: { run: calls === 1 ? completed : earlier } });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Draft complete");
+  await expect.poll(() => calls).toBeGreaterThanOrEqual(2);
+  await expect(page.locator("#status-label")).toHaveText("Draft complete");
+});
+
+test("the narrated normal-speed flow exposes the failed check before recovery", async ({ page }) => {
+  await page.goto("/?scoutTheme=dark");
+  await page.getByRole("button", { name: "Stage view", exact: true }).click();
+  await page.getByRole("button", { name: "Run rescue", exact: true }).click();
+  await expect(page.locator('[data-task="verify-1"]')).toHaveAttribute("data-state", "failed");
+  await page.getByRole("button", { name: "Pause", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Paused");
+  await page.locator('[data-task="verify-1"]').click();
+  await expect(page.locator("#inspector-detail")).toContainText("200 seats over capacity");
+  await expect(page.locator("#inspector-detail")).toContainText("0 duplicate outcomes");
+  await expect(page.locator("#flow-summary")).toContainText("200 seats over capacity");
+  await page.getByRole("button", { name: "Close task details" }).click();
+  await page.getByRole("button", { name: "Resume saved run", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
+  await expect(page.locator("#checks-total")).toHaveText("3 / 3 pass");
+  await expect(page.locator("#flow-summary")).toContainText("failed capacity check added a specialist");
+});
+
+test("native setup remains discoverable when the observer opens an earlier finished run", async ({ page }) => {
+  const snapshot = await nativeFixture();
+  await page.route("**/api/native/latest", (route) => route.fulfill({ json: { run: snapshot } }));
+  await page.goto("/?scoutTheme=dark");
+  await page.getByRole("button", { name: "Stage view", exact: true }).click();
+  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Draft complete");
+  await page.getByRole("button", { name: "Show run command", exact: true }).click();
+  await expect(page.locator("#native-panel")).toBeVisible();
+  await expect(page.locator("#native-command")).toContainText("Run-Sdk.mjs --live --pause");
+});
+
+test("keyboard inspection exposes the same measured failure as pointer inspection", async ({ page }) => {
+  await begin(page, "mixed");
+  const failedCheck = page.locator('[data-task="verify-1"]');
+  await failedCheck.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#inspector-detail")).toContainText("200 seats over capacity");
+  await page.getByRole("button", { name: "Close task details" }).click();
+  await expect(failedCheck).toBeFocused();
+  await page.getByRole("button", { name: "Approve local draft", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#status-label")).toHaveText("Draft approved");
+});
+
+test("native checkpoint review instructions and evidence control fit the stage viewport", async ({ page }) => {
+  const report = (await nativeFixture()).report;
+  const snapshot = await nativeFixture({
+    status: "awaiting-approval", phase: "Approve", report,
+    args: { scenario: "capacity", mode: "rehearsal", seed: 42, pauseForApproval: true },
+  });
+  await page.route("**/api/native/latest", (route) => route.fulfill({ json: { run: snapshot } }));
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/?scoutTheme=dark");
+  await page.getByRole("button", { name: "Stage view", exact: true }).click();
+  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
+  expect(await page.locator("#approval-panel").evaluate((element) => element.getBoundingClientRect().bottom <= innerHeight)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(1080);
+});
+
+for (const viewport of [{ width: 1366, height: 768 }, { width: 960, height: 540 }]) {
+  test(`the flow remains operable at ${viewport.width}×${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await begin(page, "mixed");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.getByRole("button", { name: "Approve local draft", exact: true }).scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: "Approve local draft", exact: true }).click();
+    await expect(page.locator("#status-label")).toHaveText("Draft approved");
+  });
+}
+
+test("capture desktop and mobile evidence without page-level overflow", async ({ page, browser }) => {
+  await mkdir("presentation\\assets", { recursive: true });
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await begin(page, "mixed");
+  await page.getByRole("button", { name: "Stage view", exact: true }).click();
+  await page.screenshot({ path: "presentation\\assets\\demo-desktop.png", fullPage: true });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(1080);
+  const rectangle = await page.locator("#workflow-graph").boundingBox();
+  expect(rectangle).not.toBeNull();
+  const scale = rectangle.width / 1540;
+  const clippedPaths = await page.locator("#workflow-graph path").evaluateAll((paths) => {
+    const clipped = [];
+    for (const [index, path] of paths.entries()) {
+      const bounds = path.getBBox();
+      if (bounds.x < 260 || bounds.x + bounds.width > 1020) {
+        path.style.visibility = "hidden";
+        clipped.push(index);
+      }
+    }
+    return clipped;
+  });
+  await page.screenshot({ path: "presentation\\assets\\demo-trace.png",
+    clip: { x: rectangle.x + 260 * scale, y: rectangle.y + 32 * scale, width: 760 * scale, height: 312 * scale } });
+  await page.locator("#workflow-graph path").evaluateAll((paths, clipped) => {
+    clipped.forEach((index) => { paths[index].style.visibility = ""; });
+  }, clippedPaths);
+  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await mobile.goto("http://127.0.0.1:4173/?scoutTheme=light");
+  await mobile.getByLabel("Presentation pacing").selectOption("0");
+  await mobile.getByRole("button", { name: "Room switch", exact: true }).click();
+  await mobile.getByRole("button", { name: "Run rescue", exact: true }).click();
+  await expect(mobile.locator("#status-label")).toHaveText("Review checkpoint");
+  expect(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await mobile.screenshot({ path: "presentation\\assets\\demo-mobile.png", fullPage: true });
+  await mobile.close();
+});

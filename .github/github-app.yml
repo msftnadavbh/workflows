@@ -1,0 +1,16 @@
+instructions: |
+  This is a synthetic, local-only conference demonstration.
+  Read Feature-Research.md before making claims about Copilot features.
+  Offline workers are JavaScript functions, not AI agents.
+  Do not deploy, send messages, access production, or execute generated code.
+  Keep model selection explicit: GPT-6.1 Sol max, Sonnet 5.5 high.
+scripts:
+  - name: Start Launch Rescue
+    command: node demo/server.mjs
+  - name: Verify demo
+    command: npm test
+server_ready_pattern: 'Local:\s+(http://127\.0\.0\.1:\d+)'
+auto_open_in_browser: true
+automation:
+  auto_issue_session: false
+  remote_control: false

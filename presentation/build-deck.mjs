@@ -237,7 +237,7 @@ function page(title, notes, ids = ["S1"], light = false, appendix = false) {
     "8:20–9:20. Launch the version-matched SDK with --walkthrough. It pauses at feature boundaries using the actual Copilot runtime. Type NEXT at those teaching stops; NEXT is not draft approval. Type APPROVE only at the separate final human checkpoint. The browser shows exact handoffs and never resumes native work. Agent models and effort remain explicit.",
     ["S2", "S4", "S5", "S19", "S20"]);
   shape(s, "roundRect", .72, 2.24, 11.90, 1.65, s.surface, { rectRadius: .15 });
-  txt(s, "node .\\native\\Run-Sdk.mjs --live --pause --walkthrough", 1.05, 2.76, 11.23, .57, 26, { fontFace: F.code, color: s.accent });
+  txt(s, "npm run native -- --live --pause --walkthrough", 1.05, 2.76, 11.23, .57, 26, { fontFace: F.code, color: s.accent });
   txt(s, "Analysis", .89, 4.45, 5.37, .50, 24, { color: s.soft });
   txt(s, "GPT-6.1 Sol / max", .89, 5.10, 5.60, .65, 32, { bold: true });
   txt(s, "Independent challenge", 7.01, 4.45, 5.37, .50, 24, { color: s.soft });

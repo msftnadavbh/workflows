@@ -25,7 +25,7 @@ Use native **Node 22.12+ arm64** on Apple Silicon or **x64** on Intel, plus **Py
 
 For browser automation on a Mac, run `npx playwright install chromium` explicitly. Windows tests retain Edge. Run `npm run check:platform -- --platform darwin --arch arm64` (or `x64`) to catch an unexpected architecture or Rosetta session. This is an architecture/package check, not a successful native workflow test.
 
-Real Mac arm64/x64 native checkpoint and resume behavior must be rehearsed on authenticated, preview-eligible hardware before presenting it as verified. That hardware is not available in the current Windows session. Existing native proofs describe Windows runs only.
+[Real Mac arm64/x64 and Windows x64 CI passed](https://github.com/msftnadavbh/workflows/actions/runs/38124419179), including the standalone browser flows, launcher, packaging, and SDK binary startup without creating a session or model call. Authenticated Mac workflow checkpoint/resume must still be rehearsed before presenting it as verified: CI intentionally receives no Copilot credentials or preview access. Existing native workflow proofs describe Windows runs only.
 
 The supplied PPTX and PDF can be presented on a Mac. **PowerPoint COM rendering/export remains Windows-only**; do not attempt `scripts/render-slides.py` on macOS. Coordinate one final presentation, screenshot, proof, and ZIP refresh with its owner. Live verification needs separate AI-credit approval.
 

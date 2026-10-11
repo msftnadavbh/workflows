@@ -48,6 +48,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:browser
+      - name: Generate presentation in this isolated CI checkout
+        run: npm run deck
       - run: npm run verify:deck
       - run: npm run package:stage
       - name: Windows PowerShell launcher contract

@@ -85,7 +85,7 @@ On Intel, replace `arm64` with `x64`. These checks identify the actual Node arch
 
 Native rehearsal/live runs still require an authenticated, preview-eligible Copilot account. Keep the owning SDK terminal open, use **NEXT** at teaching checkpoints, and **APPROVE** only at the separate final gate. HOLD, EOF, and interruption never approve. The browser is read-only.
 
-**Verification status:** Windows x64 is the available local test platform. macOS 15 arm64 and macOS 15 Intel x64 are the explicit CI targets, but real Mac native checkpoint/resume verification is pending authenticated hardware. Existing native proofs are Windows observations, not Mac certification. Do not treat the SDK's Darwin packages or simulated-platform unit tests as proof of actual Mac execution.
+**Verification status:** [Platform CI passed on Windows x64, macOS 15 arm64, and macOS 15 Intel x64](https://github.com/msftnadavbh/workflows/actions/runs/38124419179). Each actual runner passed build/typecheck, 73 Node tests, 4 packaging tests, 31 browser tests, deck verification, proof-gated packaging, and pinned native runtime startup without creating a session or model call. Authenticated Mac workflow checkpoint/resume and live runs remain unverified because Copilot credentials and preview access were not supplied to CI. Existing native workflow proofs are Windows observations, not Mac workflow certification.
 
 ### See what each run cost
 

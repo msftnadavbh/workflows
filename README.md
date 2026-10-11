@@ -65,6 +65,24 @@ node native\Run-Sdk.mjs --live --pause --walkthrough --scenario mixed
 
 To exercise the actual workflow runtime **without model calls**, replace `--live` with `--rehearsal`. Omit `--pause` for a draft-only run; no human approval is then requested or claimed.
 
+### See what each run cost
+
+Native runs report usage from the Copilot runtime in the terminal and save it to `runs\RUN_ID\cost.json`. In `--pause` runs the table also appears before the final approval checkpoint, not at every teaching stop. The customer-facing browser remains unchanged.
+
+```text
+Cost of this run (measured by the Copilot runtime)
+  Run total: <credits> AI credits · <n> subagents · <s>s active
+  Model              Requests  Input  Cached in  Output  AI credits
+  Cache reads: <tokens> tokens (<share>% of reported input + cache-read tokens).
+```
+
+| Field | Source | Scope |
+|---|---|---|
+| Run total, subagents, active time | `session.workflow.getRunDetail(runId).consumed` | This workflow run |
+| Per-model requests and input / cached / output tokens, AI credits | `session.rpc.usage.getMetrics()` | Session-wide; not independently scoped to the workflow run |
+
+Both APIs are **experimental**. AI-credit accounting is post-paid and approximate; this is runtime-reported usage, not a price list or benchmark. Session metrics may omit workflow-owned agents, so missing per-model rows are reported as unavailable rather than zero. Missing or invalid values are shown as `n/a`. If either API fails or takes more than five seconds, the meter warns and the workflow continues.
+
 ## Watch the features in the demo
 
 These are visible, paced stops in the demo itself—not just documentation:
@@ -179,6 +197,7 @@ The Windows launcher, `.\Launch-Demo.ps1`, opens the browser only after verifyin
 | [`demo/core.ts`](./demo/core.ts) | Shared scenario logic, evidence routing, bounded repairs, immutable snapshots, and checks. |
 | [`native/extension.ts`](./native/extension.ts) | Registers the actual Copilot dynamic workflow and verifies model resolution. |
 | [`native/Run-Sdk.mjs`](./native/Run-Sdk.mjs) | Hosts the pinned runtime, loads scoped agents, and owns the terminal checkpoint. |
+| [`native/cost.mjs`](./native/cost.mjs) | Reads runtime usage after each run and writes the per-model cost table to `runs\RUN_ID\cost.json`. |
 | [`demo/browser.ts`](./demo/browser.ts) | Runs offline rehearsal and observes native progress without authorizing it. |
 | [`native/reconcile.ts`](./native/reconcile.ts) | Combines progress and lifecycle records without letting stale writes undo HOLD or resumed work. |
 | [`tests`](./tests) | Regression coverage for calculations, branches, recovery, polling, packaging, and launchers. |

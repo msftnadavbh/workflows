@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-11T06:22:22.433Z",
+  "verifiedAt": "2026-10-11T07:40:06.269Z",
   "engine": "actual Copilot dynamic-workflow runtime",
   "sdkRuntime": {
     "version": "1.0.95",
@@ -14,8 +14,9 @@
       "native\\io.ts": "6b6c8828c76d053331f24e298a23d0a7abc86bbcfc7c1f47f95ddb5a56d04bef",
       "native\\reconcile.ts": "78f109a8494319bfc6fb5ac029286b26429f284887d8bafc45f73f0945b73a01",
       "native\\checkpoint.mjs": "1b8dce3263692d4a2b178e33dd103091741dcf00884b99d3d977995943d484d1",
-      "native\\Run-Sdk.mjs": "52bccb53916105058676df8ad94e93bd8adeb146824b679337b892450c6028e9",
-      "native\\verification.mjs": "72cd6ab8c2bd8903958ebcb99bd3a17ea316ebb49a6b2a8c82f672b693184b2b",
+      "native\\cost.mjs": "1ae6031489a4ce5f40b17aa358af24f21adef3893cc1019105e6e3a8b68ee25b",
+      "native\\Run-Sdk.mjs": "2fd2c65c84dfd478243c6a6d512999ddeaf2acdaedd2e9d3e6e533aa981767d1",
+      "native\\verification.mjs": "6761e799df309eca1e604510598ca75a393a09d159203e67d0404e9481bb1fe5",
       ".github\\agents\\launch-analyst.agent.md": "dfc435d82a4507905d235489f8d37bb92e9ca04924279a0079c0e63d8d45534b",
       ".github\\agents\\launch-reviewer.agent.md": "f39bc99f78942cbeb24a980af46f289d1869446ce6ad8918741b24eb41519f71",
       ".github\\extensions\\launch-rescue\\extension.mjs": "1af90a07b60cdfecb092561a80c7e59bd1d30732c52b3731d1836c838e03a6c8",
@@ -27,7 +28,7 @@
   "pausedStatus": "paused",
   "resumedStatus": "completed",
   "reportStatus": "approved",
-  "runId": "673a9ac3-0c8a-48b7-9a0d-42945d14afc2",
+  "runId": "5f181cc7-a86b-46e1-b8cf-c903f3e01c52",
   "workflowOwnedAgents": 0,
   "verificationRounds": 2,
   "verifiedCounts": {
@@ -37,5 +38,30 @@
     "oversoldSeats": 0,
     "missingAttendees": 0
   },
-  "paidLiveModelPath": "Not invoked by this no-model proof."
+  "paidLiveModelPath": "Not invoked by this no-model proof.",
+  "costMeter": {
+    "runId": "5f181cc7-a86b-46e1-b8cf-c903f3e01c52",
+    "mode": "rehearsal",
+    "measuredAt": "2026-10-11T07:40:06.259Z",
+    "run": {
+      "aiCredits": 0,
+      "subagents": 0,
+      "activeSeconds": 2.5
+    },
+    "totals": {
+      "requests": 0,
+      "inputTokens": 0,
+      "cachedInputTokens": 0,
+      "cacheWriteTokens": 0,
+      "outputTokens": 0,
+      "reasoningTokens": 0
+    },
+    "models": [],
+    "agents": [],
+    "notes": [
+      "Measured by the Copilot runtime (experimental usage APIs). AI-credit accounting is post-paid and approximate.",
+      "Token rows are session-wide; run.aiCredits is scoped to this workflow run.",
+      "Synthetic demo workload: not a benchmark of production cost."
+    ]
+  }
 }

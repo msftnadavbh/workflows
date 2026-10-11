@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { withNativeSession } from "./Run-Sdk.mjs";
 import { readNativeState, reconcileNativeRun } from "../dist/reconcile.mjs";
 import { nativeBuildFingerprint } from "./verification.mjs";
+import { recordRunCost } from "./cost.mjs";
 
 const root = fileURLToPath(new URL("..\\", import.meta.url));
 const nativeBuild = await nativeBuildFingerprint(root);
@@ -21,6 +22,8 @@ await withNativeSession(async ({ session, runtime }) => {
   assert.equal(pausedObservation.hostPid, process.pid);
   assert.equal(paused.pauseInfo.type, "checkpoint");
   const beforeResume = await session.workflow.getRunDetail(paused.runId);
+  const checkpointCost = await recordRunCost({ root, session, runId: paused.runId, mode: "rehearsal" });
+  assert.equal(checkpointCost?.run?.aiCredits, 0, "The native no-model run must report zero model credits.");
   const resumed = await session.workflow.resume(paused.runId, { notifyOnComplete: false });
   assert.equal(resumed.status, "completed");
   await reconcileNativeRun(root, resumed);
@@ -31,6 +34,9 @@ await withNativeSession(async ({ session, runtime }) => {
   assert.equal(resumed.result.after.waitlisted, 200);
   assert.ok(resumed.result.after.checks.every((check) => check.passed));
   const detail = await session.workflow.getRunDetail(paused.runId);
+  const cost = await recordRunCost({ root, session, runId: paused.runId, mode: "rehearsal" });
+  assert.equal(cost?.run?.aiCredits, 0);
+  assert.equal(cost?.run?.subagents, 0);
   assert.ok(Array.isArray(detail.agents));
   assert.equal(detail.agents.length, 0);
   assert.deepEqual(await nativeBuildFingerprint(root), nativeBuild, "The native code changed during verification.");
@@ -49,6 +55,7 @@ await withNativeSession(async ({ session, runtime }) => {
       missingAttendees: resumed.result.after.missingAttendees,
     },
     paidLiveModelPath: "Not invoked by this no-model proof.",
+    costMeter: cost,
   }, null, 2), "utf8");
   console.log("Native checkpoint and same-run resume verified, with zero model calls.");
 });

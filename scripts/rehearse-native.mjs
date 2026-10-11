@@ -11,6 +11,7 @@ import { makeServer } from "../demo/server.mjs";
 import { withNativeSession } from "../native/Run-Sdk.mjs";
 import { promptCheckpoint } from "../native/checkpoint.mjs";
 import { nativeBuildFingerprint } from "../native/verification.mjs";
+import { recordRunCost } from "../native/cost.mjs";
 import { readNativeState, reconcileNativeRun } from "../dist/reconcile.mjs";
 import { isWalkthroughCheckpoint } from "../dist/core.mjs";
 
@@ -145,6 +146,9 @@ try {
     assert.equal(exported.report.mode, mode);
     const atCheckpoint = await session.workflow.getRunDetail(paused.runId);
     assert.equal(atCheckpoint.agents.length, mode === "live" ? 3 : 0);
+    const checkpointCost = await recordRunCost({ root, session, runId: paused.runId, mode });
+    assert.ok(checkpointCost?.run && Number.isFinite(checkpointCost.run.aiCredits),
+      "The pinned runtime must report run-scoped usage at the approval checkpoint.");
 
     // Exercise the same terminal decision reader without authorizing any external action.
     const input = new PassThrough();
@@ -158,6 +162,9 @@ try {
     assert.equal(completed.status, "completed", completed.error);
     assert.equal(completed.result.status, "approved");
     const detail = await session.workflow.getRunDetail(paused.runId);
+    const cost = await recordRunCost({ root, session, runId: paused.runId, mode });
+    assert.equal(cost?.runId, paused.runId);
+    assert.ok(cost.run.aiCredits >= checkpointCost.run.aiCredits, "Run-scoped credits must not decrease on resume.");
     assert.equal(detail.agents.length, atCheckpoint.agents.length, "Resume must not spawn agents for journaled work.");
     assert.ok(detail.agents.every((agent) => agent.status === "completed"));
     if (mode === "live") {
@@ -191,6 +198,7 @@ try {
       featureStops, walkthrough: values.walkthrough ?? false,
       checkpointFitsViewport: checkpointFits, pageErrors,
       verifiedCounts: completed.result.after, note: "Synthetic local draft; no deployment, purchase, or remote write.",
+      costMeter: cost,
     };
     await writeFile(join(root, "evidence", `browser-native-${mode}-e2e.json`), JSON.stringify(evidence, null, 2), "utf8");
     if (mode === "live") {
@@ -205,6 +213,7 @@ try {
         explicitReasoningOptions: { analyst: "max", independentReviewer: "high" },
         report: completed.result, browserE2E: true, note: evidence.note,
         featureStops,
+        costMeter: cost,
       }, null, 2), "utf8");
     }
     assert.ok(checkpointFits, "The native checkpoint instructions and evidence control must fit the 1080p stage viewport.");

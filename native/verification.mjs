@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 export const NATIVE_VERIFICATION_FILES = [
   "demo\\core.ts", "native\\extension.ts", "native\\io.ts", "native\\reconcile.ts",
-  "native\\checkpoint.mjs", "native\\Run-Sdk.mjs", "native\\verification.mjs",
+  "native\\checkpoint.mjs", "native\\cost.mjs", "native\\Run-Sdk.mjs", "native\\verification.mjs",
   ".github\\agents\\launch-analyst.agent.md", ".github\\agents\\launch-reviewer.agent.md",
   ".github\\extensions\\launch-rescue\\extension.mjs",
   "dist\\core.mjs", "dist\\io.mjs", "dist\\reconcile.mjs",

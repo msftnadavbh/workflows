@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-11T06:23:12.714Z",
+  "verifiedAt": "2026-10-11T07:41:50.276Z",
   "engine": "actual Copilot dynamic-workflow runtime",
   "sdkRuntime": {
     "version": "1.0.95",
@@ -14,8 +14,9 @@
       "native\\io.ts": "6b6c8828c76d053331f24e298a23d0a7abc86bbcfc7c1f47f95ddb5a56d04bef",
       "native\\reconcile.ts": "78f109a8494319bfc6fb5ac029286b26429f284887d8bafc45f73f0945b73a01",
       "native\\checkpoint.mjs": "1b8dce3263692d4a2b178e33dd103091741dcf00884b99d3d977995943d484d1",
-      "native\\Run-Sdk.mjs": "52bccb53916105058676df8ad94e93bd8adeb146824b679337b892450c6028e9",
-      "native\\verification.mjs": "72cd6ab8c2bd8903958ebcb99bd3a17ea316ebb49a6b2a8c82f672b693184b2b",
+      "native\\cost.mjs": "1ae6031489a4ce5f40b17aa358af24f21adef3893cc1019105e6e3a8b68ee25b",
+      "native\\Run-Sdk.mjs": "2fd2c65c84dfd478243c6a6d512999ddeaf2acdaedd2e9d3e6e533aa981767d1",
+      "native\\verification.mjs": "6761e799df309eca1e604510598ca75a393a09d159203e67d0404e9481bb1fe5",
       ".github\\agents\\launch-analyst.agent.md": "dfc435d82a4507905d235489f8d37bb92e9ca04924279a0079c0e63d8d45534b",
       ".github\\agents\\launch-reviewer.agent.md": "f39bc99f78942cbeb24a980af46f289d1869446ce6ad8918741b24eb41519f71",
       ".github\\extensions\\launch-rescue\\extension.mjs": "1af90a07b60cdfecb092561a80c7e59bd1d30732c52b3731d1836c838e03a6c8",
@@ -34,21 +35,21 @@
       "status": "completed",
       "requestedModel": "gpt-6.1-sol",
       "resolvedModel": "gpt-6.1-sol",
-      "activeMs": 11727
+      "activeMs": 12616
     },
     {
       "label": "capacity-specialist-2",
       "status": "completed",
       "requestedModel": "gpt-6.1-sol",
       "resolvedModel": "gpt-6.1-sol",
-      "activeMs": 9560
+      "activeMs": 12842
     },
     {
       "label": "independent-review",
       "status": "completed",
       "requestedModel": "claude-sonnet-5.5",
       "resolvedModel": "claude-sonnet-5.5",
-      "activeMs": 5627
+      "activeMs": 5516
     }
   ],
   "explicitReasoningOptions": {
@@ -57,7 +58,7 @@
   },
   "report": {
     "version": "launch-rescue-v3",
-    "runId": "6e77ea30-0f88-4058-b2cb-c7296e0acf12",
+    "runId": "fd1a5bf4-b898-4b56-975f-66d3c6b13948",
     "synthetic": true,
     "scenario": "mixed",
     "mode": "live",
@@ -154,7 +155,7 @@
     "repairs": [
       {
         "repair": "dedupe",
-        "rationale": "E-RETRY reports 3000 requests for 2500 attendees, including 500 retries. Deduplicate by ticket ID and reuse the first decision for each ticket instead of making a new decision for each retry. This evidence supports the choice but does not verify the repair.",
+        "rationale": "E-RETRY reports 3,000 requests for 2,500 attendees, including 500 retries. Deduplicate by ticket ID and reuse the first decision for subsequent requests with that ID. This targets repeated requests; the supplied evidence does not verify that the repair is implemented or tested.",
         "evidenceIds": [
           "E-RETRY"
         ],
@@ -169,7 +170,7 @@
       },
       {
         "repair": "capacity",
-        "rationale": "E-INVENTORY reports that published inventory exceeds current room capacity by 200 seats. Use current room inventory as the capacity limit and waitlist the 200 excess attendees.",
+        "rationale": "E-INVENTORY reports that published inventory exceeds current room capacity by 200 seats. Use current room inventory as the capacity limit and waitlist the 200 excess attendees. The supplied evidence supports this recommendation but does not verify the repair.",
         "evidenceIds": [
           "E-INVENTORY"
         ],
@@ -186,7 +187,7 @@
     "verificationRounds": 2,
     "reviewer": {
       "verdict": "accept",
-      "rationale": "All three contract checks pass (0 duplicates, 0 oversold, 0 missing). The counts reconcile with the evidence: 3000 requests minus 500 ignored retries gives 2500 attendees, which is 2300 confirmed plus 200 waitlisted. Occupancy of 1600/1600 and 700/700 matches the 200-seat capacity shortfall. Each repair is consistent with its own round snapshot, round 2 correctly handles the changed inventory fact, and the final policy matches current evidence. This is a synthetic local result only, with no production or performance claim.",
+      "rationale": "All three contract checks pass. The counts reconcile: 3000 requests minus 500 retries leaves 2500 attendees, which equals 2300 confirmed plus 200 waitlisted. Room occupancy is exactly at capacity (1600/1600, 700/700), with 0 duplicates, 0 oversold seats and 0 missing attendees. Each repair matches its own round snapshot, the round-2 inventory change is handled by the capacity repair, and the policy matches current evidence. This is a synthetic local result only, not evidence of production readiness or real allocation.",
       "evidenceIds": [
         "E-RETRY",
         "E-INVENTORY"
@@ -217,5 +218,79 @@
       "featureId": "review",
       "agents": 3
     }
-  ]
+  ],
+  "costMeter": {
+    "runId": "fd1a5bf4-b898-4b56-975f-66d3c6b13948",
+    "mode": "live",
+    "measuredAt": "2026-10-11T07:41:49.765Z",
+    "run": {
+      "aiCredits": 3.2365,
+      "subagents": 3,
+      "activeSeconds": 41.7
+    },
+    "totals": {
+      "requests": 3,
+      "inputTokens": 5376,
+      "cachedInputTokens": 0,
+      "cacheWriteTokens": 5366,
+      "outputTokens": 1893,
+      "reasoningTokens": 1032
+    },
+    "models": [
+      {
+        "model": "gpt-6.1-sol",
+        "requests": 2,
+        "inputTokens": 2351,
+        "cachedInputTokens": 0,
+        "cacheWriteTokens": 2345,
+        "outputTokens": 1216,
+        "reasoningTokens": 1032,
+        "aiCredits": 1.80345
+      },
+      {
+        "model": "claude-sonnet-5.5",
+        "requests": 1,
+        "inputTokens": 3025,
+        "cachedInputTokens": 0,
+        "cacheWriteTokens": 3021,
+        "outputTokens": 677,
+        "reasoningTokens": 0,
+        "aiCredits": 1.43305
+      }
+    ],
+    "agents": [
+      {
+        "id": "708a910b-5f34-4d03-9bda-52d0b57bc1ac",
+        "agent": "launch-analyst",
+        "label": "dedupe-specialist-1",
+        "models": [
+          "gpt-6.1-sol"
+        ],
+        "aiCredits": 0.9031
+      },
+      {
+        "id": "fdc19e9b-b80b-48df-acbb-66c0bdf2dc03",
+        "agent": "launch-analyst",
+        "label": "capacity-specialist-2",
+        "models": [
+          "gpt-6.1-sol"
+        ],
+        "aiCredits": 0.90035
+      },
+      {
+        "id": "07cef983-7784-479f-906b-4b662c83c0aa",
+        "agent": "launch-reviewer",
+        "label": "independent-review",
+        "models": [
+          "claude-sonnet-5.5"
+        ],
+        "aiCredits": 1.43305
+      }
+    ],
+    "notes": [
+      "Measured by the Copilot runtime (experimental usage APIs). AI-credit accounting is post-paid and approximate.",
+      "Token rows are session-wide; run.aiCredits is scoped to this workflow run.",
+      "Synthetic demo workload: not a benchmark of production cost."
+    ]
+  }
 }

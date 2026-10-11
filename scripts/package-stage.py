@@ -20,7 +20,7 @@ EXTRA = [r"presentation\build-deck.mjs", r"presentation\slide-manifest.json",
          r".impeccable\design-system.json"]
 NATIVE_VERIFICATION_FILES = [
     r"demo\core.ts", r"native\extension.ts", r"native\io.ts", r"native\reconcile.ts",
-    r"native\checkpoint.mjs", r"native\Run-Sdk.mjs", r"native\verification.mjs",
+    r"native\checkpoint.mjs", r"native\cost.mjs", r"native\Run-Sdk.mjs", r"native\verification.mjs",
     r".github\agents\launch-analyst.agent.md", r".github\agents\launch-reviewer.agent.md",
     r".github\extensions\launch-rescue\extension.mjs",
     r"dist\core.mjs", r"dist\io.mjs", r"dist\reconcile.mjs",

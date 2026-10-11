@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-11T06:23:12.714Z",
+  "verifiedAt": "2026-10-11T07:41:50.276Z",
   "mode": "live",
   "nativeBuild": {
     "algorithm": "sha256",
@@ -9,8 +9,9 @@
       "native\\io.ts": "6b6c8828c76d053331f24e298a23d0a7abc86bbcfc7c1f47f95ddb5a56d04bef",
       "native\\reconcile.ts": "78f109a8494319bfc6fb5ac029286b26429f284887d8bafc45f73f0945b73a01",
       "native\\checkpoint.mjs": "1b8dce3263692d4a2b178e33dd103091741dcf00884b99d3d977995943d484d1",
-      "native\\Run-Sdk.mjs": "52bccb53916105058676df8ad94e93bd8adeb146824b679337b892450c6028e9",
-      "native\\verification.mjs": "72cd6ab8c2bd8903958ebcb99bd3a17ea316ebb49a6b2a8c82f672b693184b2b",
+      "native\\cost.mjs": "1ae6031489a4ce5f40b17aa358af24f21adef3893cc1019105e6e3a8b68ee25b",
+      "native\\Run-Sdk.mjs": "2fd2c65c84dfd478243c6a6d512999ddeaf2acdaedd2e9d3e6e533aa981767d1",
+      "native\\verification.mjs": "6761e799df309eca1e604510598ca75a393a09d159203e67d0404e9481bb1fe5",
       ".github\\agents\\launch-analyst.agent.md": "dfc435d82a4507905d235489f8d37bb92e9ca04924279a0079c0e63d8d45534b",
       ".github\\agents\\launch-reviewer.agent.md": "f39bc99f78942cbeb24a980af46f289d1869446ce6ad8918741b24eb41519f71",
       ".github\\extensions\\launch-rescue\\extension.mjs": "1af90a07b60cdfecb092561a80c7e59bd1d30732c52b3731d1836c838e03a6c8",
@@ -25,12 +26,12 @@
   },
   "browserArtifact": {
     "file": "Launch-Rescue-Demo.html",
-    "sha256": "3f7e9eaa47c3d778340a6a68dcf0fcc8e7e57082a0cfd10f82d44cbbefbe8940"
+    "sha256": "56ac921a1e78b36fbe7267a1e383ade1b92c7040876bdaabf8b91d6c7b2faaaf"
   },
   "realBrowser": "Microsoft Edge",
   "viewport": "1920x1080",
   "scenario": "mixed",
-  "runId": "6e77ea30-0f88-4058-b2cb-c7296e0acf12",
+  "runId": "fd1a5bf4-b898-4b56-975f-66d3c6b13948",
   "checkpointStatus": "paused",
   "finalStatus": "completed",
   "browserExportedCurrentRun": true,
@@ -105,5 +106,79 @@
       }
     ]
   },
-  "note": "Synthetic local draft; no deployment, purchase, or remote write."
+  "note": "Synthetic local draft; no deployment, purchase, or remote write.",
+  "costMeter": {
+    "runId": "fd1a5bf4-b898-4b56-975f-66d3c6b13948",
+    "mode": "live",
+    "measuredAt": "2026-10-11T07:41:49.765Z",
+    "run": {
+      "aiCredits": 3.2365,
+      "subagents": 3,
+      "activeSeconds": 41.7
+    },
+    "totals": {
+      "requests": 3,
+      "inputTokens": 5376,
+      "cachedInputTokens": 0,
+      "cacheWriteTokens": 5366,
+      "outputTokens": 1893,
+      "reasoningTokens": 1032
+    },
+    "models": [
+      {
+        "model": "gpt-6.1-sol",
+        "requests": 2,
+        "inputTokens": 2351,
+        "cachedInputTokens": 0,
+        "cacheWriteTokens": 2345,
+        "outputTokens": 1216,
+        "reasoningTokens": 1032,
+        "aiCredits": 1.80345
+      },
+      {
+        "model": "claude-sonnet-5.5",
+        "requests": 1,
+        "inputTokens": 3025,
+        "cachedInputTokens": 0,
+        "cacheWriteTokens": 3021,
+        "outputTokens": 677,
+        "reasoningTokens": 0,
+        "aiCredits": 1.43305
+      }
+    ],
+    "agents": [
+      {
+        "id": "708a910b-5f34-4d03-9bda-52d0b57bc1ac",
+        "agent": "launch-analyst",
+        "label": "dedupe-specialist-1",
+        "models": [
+          "gpt-6.1-sol"
+        ],
+        "aiCredits": 0.9031
+      },
+      {
+        "id": "fdc19e9b-b80b-48df-acbb-66c0bdf2dc03",
+        "agent": "launch-analyst",
+        "label": "capacity-specialist-2",
+        "models": [
+          "gpt-6.1-sol"
+        ],
+        "aiCredits": 0.90035
+      },
+      {
+        "id": "07cef983-7784-479f-906b-4b662c83c0aa",
+        "agent": "launch-reviewer",
+        "label": "independent-review",
+        "models": [
+          "claude-sonnet-5.5"
+        ],
+        "aiCredits": 1.43305
+      }
+    ],
+    "notes": [
+      "Measured by the Copilot runtime (experimental usage APIs). AI-credit accounting is post-paid and approximate.",
+      "Token rows are session-wide; run.aiCredits is scoped to this workflow run.",
+      "Synthetic demo workload: not a benchmark of production cost."
+    ]
+  }
 }

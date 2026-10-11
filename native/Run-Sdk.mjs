@@ -7,6 +7,7 @@ import { CopilotClient, RuntimeConnection } from "@github/copilot-sdk";
 import { ANALYST, REVIEWER, isWalkthroughCheckpoint, validateArgs } from "../dist/core.mjs";
 import { reconcileNativeRun } from "../dist/reconcile.mjs";
 import { promptCheckpoint } from "./checkpoint.mjs";
+import { recordRunCost } from "./cost.mjs";
 
 const root = fileURLToPath(new URL("..\\", import.meta.url));
 
@@ -97,6 +98,7 @@ async function main() {
         console.log(walkthrough
           ? "Feature walkthrough stopped. Read the highlighted feature, relevant code, input, and result in the browser."
           : "Review the synthetic draft and its evidence. This checkpoint does not authorize deployment.");
+        if (!walkthrough) await recordRunCost({ root, session, runId, mode: args.mode });
         const answer = await promptCheckpoint(undefined, undefined, walkthrough ? "NEXT" : "APPROVE");
         if (answer === "hold") {
           await reconcileNativeRun(root, final, { hostClosed: true });
@@ -119,6 +121,7 @@ async function main() {
     const envelope = join(root, "runs", `sdk-envelope-${runId}.json`);
     await writeFile(envelope, JSON.stringify(final, null, 2), "utf8");
     console.log(`Native status: ${final.status}; envelope: ${envelope}`);
+    await recordRunCost({ root, session, runId, mode: args.mode });
     if (final.status !== "completed" && final.status !== "paused") {
       throw new Error(`Native workflow did not complete: ${final.error ?? final.reason ?? final.failure?.type ?? final.status}`);
     }

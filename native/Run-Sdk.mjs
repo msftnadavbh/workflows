@@ -7,6 +7,7 @@ import { CopilotClient, RuntimeConnection } from "@github/copilot-sdk";
 import { ANALYST, REVIEWER, validateArgs } from "../dist/core.mjs";
 import { reconcileNativeRun } from "../dist/reconcile.mjs";
 import { promptCheckpoint } from "./checkpoint.mjs";
+import { recordRunCost } from "./cost.mjs";
 
 const root = fileURLToPath(new URL("..\\", import.meta.url));
 
@@ -92,6 +93,7 @@ async function main() {
     if (result.status === "paused") {
       try {
         console.log("Inspect the local observer or runs\\RUN_ID\\report.json. This checkpoint does not authorize deployment.");
+        await recordRunCost({ root, session, runId: result.runId, mode: args.mode });
         const answer = await promptCheckpoint();
         if (answer === "approve") {
           final = await session.workflow.resume(result.runId, { notifyOnComplete: false });
@@ -115,6 +117,7 @@ async function main() {
     const envelope = join(root, "runs", `sdk-envelope-${result.runId}.json`);
     await writeFile(envelope, JSON.stringify(final, null, 2), "utf8");
     console.log(`Native status: ${final.status}; envelope: ${envelope}`);
+    await recordRunCost({ root, session, runId: result.runId, mode: args.mode });
     if (final.status !== "completed" && final.status !== "paused") {
       throw new Error(`Native workflow did not complete: ${final.error ?? final.reason ?? final.failure?.type ?? final.status}`);
     }

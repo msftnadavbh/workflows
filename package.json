@@ -8,7 +8,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "start": "node demo/server.mjs",
-    "test": "npm run build && node --test tests\\core.test.mjs tests\\workflow.test.mjs tests\\server.test.mjs tests\\native-io.test.mjs tests\\checkpoint.test.mjs && python tests\\package-stage.test.py",
+    "test": "npm run build && node --test tests\\core.test.mjs tests\\workflow.test.mjs tests\\server.test.mjs tests\\native-io.test.mjs tests\\checkpoint.test.mjs tests\\cost.test.mjs && python tests\\package-stage.test.py",
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test",
     "test:native-e2e": "node scripts\\rehearse-native.mjs --live",

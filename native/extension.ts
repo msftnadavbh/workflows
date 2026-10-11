@@ -12,7 +12,7 @@ const root = fileURLToPath(new URL("../../../", import.meta.url));
 const ownedRuns = new Set<string>();
 const meta: WorkflowMeta = {
   name: "launch-rescue",
-  description: "Rescue a synthetic 2,500-attendee ticket launch. Evidence routes bounded specialists, real checks gate the draft, and a checkpoint enables review/resume. args: scenario (retries/capacity/parallel/mixed), mode (rehearsal/live), seed, pauseForApproval.",
+  description: "Demonstrate Dynamic Workflow orchestration versus agentic reasoning through a synthetic launch rescue. walkthrough true pauses at visible feature proofs; pauseForApproval separately requires human draft approval. args: scenario, mode, seed, walkthrough, pauseForApproval.",
   phases: ["Observe", "Diagnose", "Repair", "Verify", "Adapt", "Challenge", "Approve", "Complete"].map((title) => ({ title })),
   argsSchema: {
     type: "object",
@@ -21,6 +21,7 @@ const meta: WorkflowMeta = {
       mode: { type: "string", enum: ["rehearsal", "live"] },
       seed: { type: "integer" },
       pauseForApproval: { type: "boolean" },
+      walkthrough: { type: "boolean" },
     },
   },
   limits: { maxConcurrentSubagents: 2, maxTotalSubagents: 6, timeoutSeconds: 480 },

@@ -10,7 +10,7 @@ export type Journal = {
 };
 
 export class CheckpointPause extends Error {
-  constructor() { super("Review checkpoint reached."); this.name = "CheckpointPause"; }
+  constructor(readonly key: string = "") { super("Review checkpoint reached."); this.name = "CheckpointPause"; }
 }
 export class PresenterPause extends Error {
   constructor() { super("Paused by presenter. Saved steps can be resumed."); this.name = "PresenterPause"; }
@@ -107,6 +107,6 @@ export class LocalContext implements RunContext {
     if (this.journal.checkpoints[key] === true) return;
     this.journal.checkpoints[key] = true;
     this.save(this.journal);
-    throw new CheckpointPause();
+    throw new CheckpointPause(key);
   }
 }

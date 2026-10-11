@@ -2714,7 +2714,7 @@
   },
   {
     "number": 6,
-    "title": "Code owns the repeatable.\nAgents handle judgment.",
+    "title": "Two features.\nOne controlled process.",
     "objects": [
       {
         "kind": "text",
@@ -2722,7 +2722,7 @@
         "y": 0.47,
         "w": 12.04,
         "h": 1.38,
-        "label": "Code owns the repeatable.\nAgents handle judgment."
+        "label": "Two features.\nOne controlled process."
       },
       {
         "kind": "text",
@@ -2750,195 +2750,59 @@
       },
       {
         "kind": "shape",
-        "x": 0.7,
-        "y": 2.58,
-        "w": 1.66,
-        "h": 0.94,
+        "x": 0.76,
+        "y": 2.28,
+        "w": 5.8,
+        "h": 3.22,
         "label": ""
       },
       {
         "kind": "text",
-        "x": 0.83,
-        "y": 2.68,
-        "w": 1.4,
-        "h": 0.74,
-        "label": "Capture"
+        "x": 0.98,
+        "y": 2.5,
+        "w": 5.359999999999999,
+        "h": 0.66,
+        "label": "Dynamic Workflow"
+      },
+      {
+        "kind": "text",
+        "x": 0.98,
+        "y": 3.3,
+        "w": 5.359999999999999,
+        "h": 2.0200000000000005,
+        "label": "Code picks specialists.\nCode branches on failed checks.\nCode saves and pauses."
       },
       {
         "kind": "shape",
-        "x": 2.7,
-        "y": 2.58,
-        "w": 1.66,
-        "h": 0.94,
+        "x": 6.8,
+        "y": 2.28,
+        "w": 5.8,
+        "h": 3.22,
         "label": ""
       },
       {
         "kind": "text",
-        "x": 2.83,
-        "y": 2.68,
-        "w": 1.4,
-        "h": 0.74,
-        "label": "Inspect"
-      },
-      {
-        "kind": "shape",
-        "x": 4.7,
-        "y": 2.58,
-        "w": 1.66,
-        "h": 0.94,
-        "label": ""
+        "x": 7.02,
+        "y": 2.5,
+        "w": 5.359999999999999,
+        "h": 0.66,
+        "label": "Agentic Workflow"
       },
       {
         "kind": "text",
-        "x": 4.83,
-        "y": 2.68,
-        "w": 1.4,
-        "h": 0.74,
-        "label": "Specialize"
-      },
-      {
-        "kind": "shape",
-        "x": 6.7,
-        "y": 2.58,
-        "w": 1.66,
-        "h": 0.94,
-        "label": ""
+        "x": 7.02,
+        "y": 3.3,
+        "w": 5.359999999999999,
+        "h": 2.0200000000000005,
+        "label": "Model interprets evidence.\nModel explains or rejects.\nModel never rewrites code."
       },
       {
         "kind": "text",
-        "x": 6.83,
-        "y": 2.68,
-        "w": 1.4,
-        "h": 0.74,
-        "label": "Verify"
-      },
-      {
-        "kind": "shape",
-        "x": 8.7,
-        "y": 2.58,
-        "w": 1.66,
-        "h": 0.94,
-        "label": ""
-      },
-      {
-        "kind": "text",
-        "x": 8.83,
-        "y": 2.68,
-        "w": 1.4,
-        "h": 0.74,
-        "label": "Challenge"
-      },
-      {
-        "kind": "shape",
-        "x": 10.7,
-        "y": 2.58,
-        "w": 1.66,
-        "h": 0.94,
-        "label": ""
-      },
-      {
-        "kind": "text",
-        "x": 10.83,
-        "y": 2.68,
-        "w": 1.4,
-        "h": 0.74,
-        "label": "Pause"
-      },
-      {
-        "kind": "connector",
-        "x": 2.36,
-        "y": 3.05,
-        "w": 0.3400000000000003,
-        "h": 0,
-        "label": ""
-      },
-      {
-        "kind": "connector",
-        "x": 4.359999999999999,
-        "y": 3.05,
-        "w": 0.34000000000000075,
-        "h": 0,
-        "label": ""
-      },
-      {
-        "kind": "connector",
-        "x": 6.359999999999999,
-        "y": 3.05,
-        "w": 0.34000000000000075,
-        "h": 0,
-        "label": ""
-      },
-      {
-        "kind": "connector",
-        "x": 8.36,
-        "y": 3.05,
-        "w": 0.33999999999999986,
-        "h": 0,
-        "label": ""
-      },
-      {
-        "kind": "connector",
-        "x": 10.36,
-        "y": 3.05,
-        "w": 0.33999999999999986,
-        "h": 0,
-        "label": ""
-      },
-      {
-        "kind": "text",
-        "x": 0.7,
-        "y": 3.84,
-        "w": 1.66,
-        "h": 0.43,
-        "label": "Code"
-      },
-      {
-        "kind": "text",
-        "x": 2.7,
-        "y": 3.84,
-        "w": 1.66,
-        "h": 0.43,
-        "label": "Code"
-      },
-      {
-        "kind": "text",
-        "x": 4.7,
-        "y": 3.84,
-        "w": 1.66,
-        "h": 0.43,
-        "label": "Judgment"
-      },
-      {
-        "kind": "text",
-        "x": 6.7,
-        "y": 3.84,
-        "w": 1.66,
-        "h": 0.43,
-        "label": "Code"
-      },
-      {
-        "kind": "text",
-        "x": 8.7,
-        "y": 3.84,
-        "w": 1.66,
-        "h": 0.43,
-        "label": "Judgment"
-      },
-      {
-        "kind": "text",
-        "x": 10.7,
-        "y": 3.84,
-        "w": 1.66,
-        "h": 0.43,
-        "label": "Human"
-      },
-      {
-        "kind": "text",
-        "x": 0.8,
-        "y": 5.08,
-        "w": 11.8,
-        "h": 1.16,
-        "label": "Don't spend an agent on a calculation.\nSpend one where interpretation changes the decision."
+        "x": 0.96,
+        "y": 6.03,
+        "w": 11.45,
+        "h": 0.66,
+        "label": "Code owns the process. Models handle judgment."
       }
     ],
     "appendix": false,
@@ -3241,7 +3105,7 @@
   },
   {
     "number": 9,
-    "title": "Let's put the process on stage.",
+    "title": "Identify the feature at every stop.",
     "objects": [
       {
         "kind": "text",
@@ -3249,7 +3113,7 @@
         "y": 0.47,
         "w": 12.04,
         "h": 0.84,
-        "label": "Let's put the process on stage."
+        "label": "Identify the feature at every stop."
       },
       {
         "kind": "text",
@@ -3276,20 +3140,84 @@
         "label": "09"
       },
       {
-        "kind": "image",
-        "x": 0.77,
-        "y": 1.79,
-        "w": 11.78,
-        "h": 4.84,
-        "label": "Actual working demo, cropped execution trace"
+        "kind": "shape",
+        "x": 0.85,
+        "y": 2,
+        "w": 5.58,
+        "h": 0.94,
+        "label": ""
       },
       {
         "kind": "text",
-        "x": 0.94,
-        "y": 6.66,
-        "w": 11.45,
-        "h": 0.32,
-        "label": "Trace detail: evidence → specialists → checks. Offline rehearsal / no LLM."
+        "x": 0.98,
+        "y": 2.1,
+        "w": 5.32,
+        "h": 0.74,
+        "label": "Dynamic Workflow"
+      },
+      {
+        "kind": "text",
+        "x": 1.01,
+        "y": 3.18,
+        "w": 5.32,
+        "h": 1.28,
+        "label": "CODE chooses the steps.\nBranches when checks fail.\nKeeps completed work."
+      },
+      {
+        "kind": "shape",
+        "x": 0.85,
+        "y": 4.75,
+        "w": 5.58,
+        "h": 0.94,
+        "label": ""
+      },
+      {
+        "kind": "text",
+        "x": 0.98,
+        "y": 4.85,
+        "w": 5.32,
+        "h": 0.74,
+        "label": "Agentic Workflow"
+      },
+      {
+        "kind": "text",
+        "x": 1.01,
+        "y": 5.89,
+        "w": 5.32,
+        "h": 0.85,
+        "label": "MODEL interprets evidence.\nExplains or rejects the repair."
+      },
+      {
+        "kind": "text",
+        "x": 7.02,
+        "y": 1.89,
+        "w": 5.28,
+        "h": 0.47,
+        "label": "Actual model handoff"
+      },
+      {
+        "kind": "image",
+        "x": 7.02,
+        "y": 2.64,
+        "w": 5.28,
+        "h": 1.513782383419689,
+        "label": "Actual native model and call excerpt"
+      },
+      {
+        "kind": "text",
+        "x": 7.02,
+        "y": 5.13,
+        "w": 5.28,
+        "h": 0.76,
+        "label": "Evidence in: 500 retry requests"
+      },
+      {
+        "kind": "text",
+        "x": 7.02,
+        "y": 6,
+        "w": 5.28,
+        "h": 0.73,
+        "label": "repair: dedupe\ncites: E-RETRY"
       }
     ],
     "appendix": false,
@@ -3491,7 +3419,7 @@
         "y": 2.76,
         "w": 11.23,
         "h": 0.57,
-        "label": "node .\\native\\Run-Sdk.mjs --live --pause"
+        "label": "node .\\native\\Run-Sdk.mjs --live --pause --walkthrough"
       },
       {
         "kind": "text",
@@ -3530,8 +3458,8 @@
         "x": 0.92,
         "y": 6.18,
         "w": 11.5,
-        "h": 0.45,
-        "label": "No silent Auto fallback. Live calls consume AI credits."
+        "h": 0.55,
+        "label": "5 teaching stops: NEXT. Final draft review: APPROVE."
       }
     ],
     "appendix": false,

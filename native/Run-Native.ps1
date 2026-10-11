@@ -2,7 +2,8 @@ param(
     [ValidateSet('Live', 'Rehearsal', 'Checkpoint')]
     [string]$Mode = 'Rehearsal',
     [ValidateSet('retries', 'capacity', 'parallel', 'mixed')]
-    [string]$Scenario = 'mixed'
+    [string]$Scenario = 'mixed',
+    [switch]$Walkthrough
 )
 
 $ErrorActionPreference = 'Stop'
@@ -23,6 +24,7 @@ $arguments = @{
     mode = $(if ($Mode -eq 'Live') { 'live' } else { 'rehearsal' })
     seed = 42
     pauseForApproval = ($Mode -ne 'Rehearsal')
+    walkthrough = $Walkthrough.IsPresent
 } | ConvertTo-Json
 [System.IO.File]::WriteAllText($inputFile, $arguments, [System.Text.UTF8Encoding]::new($false))
 Write-Host ('Starting native Copilot dynamic workflow: ' + $Mode)

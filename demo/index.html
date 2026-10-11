@@ -1,9 +1,9 @@
 <!doctype html>
 <!--
-THESIS: Evidence redraws the workflow. This is an execution trace, not a wall of agent cards.
+THESIS: Make Dynamic Workflow orchestration and Agentic Workflow reasoning visibly different, with actual inputs, code excerpts, and outputs.
 OWN-WORLD: Clawpilot charcoal and warm paper, rose switches, Segoe UI, flat trace lanes, explicit status words.
-STORY: Choose a synthetic fault, run real checks, watch a specialist join, inspect the evidence, approve a local draft.
-FIRST VIEWPORT: Large mission statement, audience-choice toolbar, full-width causal graph, measured outcomes and acceptance gate.
+STORY: Advance a guided feature walkthrough, see code route an agent, inspect its response, watch a failed check change the plan, then approve a local draft.
+FIRST VIEWPORT: Two explicit feature definitions, audience-choice controls, a causal graph beside its feature proof, measured outcomes and a separate human gate.
 FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph carries the work; phase tools change around it.
 -->
 <html lang="en">
@@ -101,6 +101,36 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     .truth-strip { display: flex; justify-content: space-between; gap: 20px; padding: 12px 16px; border: 1px solid var(--cp-border); border-radius: .625rem; background: var(--cp-bg-elevated); font-size: 15px; line-height: 1.5; }
     .truth-strip strong { color: var(--cp-accent); }
     .truth-strip span:last-child { color: var(--cp-text-soft); }
+    .feature-definitions { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 16px 0; border-bottom: 1px solid var(--cp-border); }
+    .feature-definitions h2 { font-size: 24px; }
+    .feature-definitions p { margin: 6px 0 0; font-size: 16px; line-height: 1.5; color: var(--cp-text-soft); }
+    .feature-definitions strong { color: var(--cp-accent); font-size: 14px; display: block; margin-top: 4px; }
+    .feature-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(400px, 1fr); gap: 24px; align-items: start; }
+    .feature-layout > section, #feature-proof, .proof-data > section { min-width: 0; }
+    #feature-proof { margin-top: 20px; padding: 20px; border: 1px solid var(--cp-border-strong); border-radius: 16px; background: var(--cp-surface); }
+    #proof-feature { color: var(--cp-accent); font-size: 16px; font-weight: 700; }
+    #proof-pause { margin: 8px 0 0; font-size: 18px; font-weight: 650; color: var(--cp-accent); }
+    .proof-benefit-label { margin: 10px 0 0; font-size: 14px; font-weight: 650; }
+    #proof-verdict-rule { margin: 8px 0; font-size: 15px; line-height: 1.5; }
+    #walkthrough-toggle[aria-pressed="true"] { color: var(--cp-accent); border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+    #proof-title { font-size: 24px; line-height: 1.2; margin-top: 8px; }
+    #proof-benefit { font-size: 16px; line-height: 1.5; margin: 10px 0; }
+    #proof-execution { font-size: 14px; line-height: 1.5; color: var(--cp-text-soft); margin: 8px 0 12px; }
+    #feature-proof pre { font-size: 14px; padding: 10px; line-height: 1.4; margin: 6px 0 12px; max-height: 132px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .proof-body { overflow: auto; }
+    .proof-body:focus-visible { outline: 3px solid var(--cp-accent); outline-offset: 3px; }
+    #proof-code { max-height: 116px; color: var(--cp-text); }
+    .proof-data { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .proof-data h3 { font-size: 16px; margin: 0; }
+    #proof-step { width: 100%; min-height: 44px; font-size: 14px; margin-top: 12px; }
+    #proof-history { padding: 4px 0; border: 0; }
+    #proof-history summary { font-size: 14px; }
+    #proof-prompt-details { padding: 8px 0; }
+    #proof-prompt-details summary { font-size: 14px; }
+    #proof-prompt { max-height: 240px; }
+    #proof-control-note { font-size: 14px; line-height: 1.5; color: var(--cp-text-soft); margin: 8px 0; }
+    #continue-walkthrough { width: 100%; font-size: 18px; }
+    .proof-code-label { font-size: 14px; color: var(--cp-text-soft); }
     .runbar { display: flex; align-items: center; gap: 24px; padding: 22px 0; border-bottom: 1px solid var(--cp-border); }
     fieldset { margin: 0; border: 0; padding: 0; min-width: 0; flex: 1; }
     legend { font-size: 16px; font-weight: 650; margin-bottom: 10px; }
@@ -135,6 +165,7 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     .graph-node[data-state="done"] rect { stroke: var(--cp-accent); }
     .graph-node[data-state="failed"] rect, .graph-node[data-state="error"] rect { stroke: var(--cp-danger); stroke-width: 2.5; }
     .graph-node[data-state="passed"] rect { stroke: var(--cp-success); stroke-width: 2.5; }
+    .graph-node[data-focus="true"] rect { fill: var(--cp-accent-soft); stroke-width: 3; }
     .graph-node:focus-visible rect { stroke: var(--cp-accent); stroke-width: 4; }
     .graph-title { fill: var(--cp-text); font-size: 22px; font-weight: 600; }
     .graph-kind { fill: var(--cp-text-soft); font-size: 14px; }
@@ -201,7 +232,7 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     html[data-stage="true"] .runbar { padding: 16px 0; }
     html[data-stage="true"] .results { padding-top: 16px; }
     @media (min-width: 1101px) {
-      html[data-stage="true"] .intro { position: absolute; top: 16px; right: 340px; padding: 0; }
+      html[data-stage="true"] .intro { position: absolute; top: 16px; right: 520px; padding: 0; }
       html[data-stage="true"] .intro > div:first-child { display: none; }
       html[data-stage="true"] .truth-strip { margin-top: 12px; padding: 8px 16px; }
       html[data-stage="true"] .runbar { padding: 12px 0; }
@@ -220,9 +251,24 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
       html[data-stage="true"] .outcomes { padding-bottom: 12px; }
       html[data-stage="true"] #approval-panel { padding: 0; margin-top: 12px; border: 0; background: none; }
       html[data-stage="true"] #approval-panel h2, html[data-stage="true"] #approval-panel p { display: none; }
-      html[data-stage="true"][data-native-connected="true"] #approval-panel p { display: block; font-size: 16px; margin: 4px 0 8px; }
       html[data-stage="true"][data-native-connected="true"]:not([data-native-setup="true"]) #native-panel { display: none; }
       html[data-stage="true"] #flow-summary { margin-bottom: 6px; font-size: 18px; }
+      html[data-stage="true"] .feature-definitions { padding: 8px 0; }
+      html[data-stage="true"] .feature-definitions p { font-size: 15px; }
+      html[data-stage="true"] .feature-definitions strong { font-size: 13px; display: inline; margin-left: 8px; }
+      html[data-stage="true"] #feature-proof { margin-top: 12px; padding: 16px; }
+      html[data-stage="true"] .proof-body { max-height: 230px; }
+      html[data-stage="true"][data-run-status="walkthrough"] .proof-body { max-height: 330px; }
+      html[data-stage="true"] #proof-benefit { font-size: 15px; }
+      html[data-stage="true"] #proof-title { font-size: 22px; }
+      html[data-stage="true"] #proof-output, html[data-stage="true"] #proof-input { max-height: 110px; }
+      html[data-stage="true"] #proof-step { margin-top: 6px; }
+      html[data-stage="true"] .check { padding: 5px 0; }
+      html[data-stage="true"] .checks { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+      html[data-stage="true"] .check { flex-direction: column; align-items: flex-start; gap: 4px; }
+      html[data-stage="true"][data-run-status="walkthrough"] .results { display: none; }
+      html[data-stage="true"][data-run-status="awaiting-approval"] #proof-control-note,
+      html[data-stage="true"][data-run-status="completed"] #proof-control-note { display: none; }
     }
     [hidden] { display: none !important; }
     @media (min-width: 1800px) {
@@ -240,6 +286,8 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
       .transport { justify-content: flex-start; margin-top: 18px; }
       #workflow-graph { min-width: 880px; }
       .results { gap: 24px; }
+      .feature-layout { grid-template-columns: minmax(0, 1fr); }
+      #feature-proof { margin-top: 0; }
     }
     @media (max-width: 680px) {
       .shell, html[data-stage="true"] .shell { padding: 16px; }
@@ -255,6 +303,8 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
       .truth-strip span { display: block; }
       .truth-strip span:last-child { margin-top: 4px; }
       .choices { display: grid; grid-template-columns: 1fr 1fr; }
+      .feature-definitions { grid-template-columns: 1fr; gap: 16px; }
+      .proof-data { grid-template-columns: 1fr; }
       .scenario-choice { font-size: 15px; padding: 12px 8px; }
       .transport { gap: 6px; }
       #run-button { min-width: 140px; font-size: 17px; }
@@ -288,6 +338,7 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
         <span>Launch Rescue</span>
       </div>
       <div class="top-actions">
+        <button class="quiet" id="walkthrough-toggle" aria-pressed="true">Feature walkthrough</button>
         <button class="quiet" id="cue-toggle" aria-pressed="false">Presenter cues</button>
         <button class="quiet" id="stage-toggle" aria-pressed="false">Stage view</button>
         <button class="quiet" id="theme-toggle" aria-label="Switch color theme">Theme</button>
@@ -295,8 +346,8 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     </header>
     <section class="intro" aria-labelledby="mission-title">
       <div>
-        <h1 id="mission-title">Watch the plan change.</h1>
-        <p>2,500 attendees. A broken ticket launch. Evidence decides which specialists join.</p>
+        <h1 id="mission-title">See Dynamic + Agentic Workflows.</h1>
+        <p>Code controls the process. Agents explain and challenge the evidence. Tests determine whether it worked.</p>
       </div>
       <div class="mode-control" role="group" aria-label="Execution mode">
         <button id="offline-mode" aria-pressed="true">Offline rehearsal</button>
@@ -307,16 +358,26 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
       <span><strong id="mode-label">OFFLINE REHEARSAL</strong> <span id="mode-description">Real JavaScript workers and checks. No LLM calls.</span></span>
       <span>Synthetic data. Local draft only. Nothing deployed.</span>
     </div>
+    <section class="feature-definitions" aria-label="The two workflow features demonstrated">
+      <div>
+        <h2>Dynamic Workflow: CODE controls execution</h2>
+        <p>Code chooses branches, parallel work, saved steps, and checkpoints. <strong id="dynamic-execution">Offline: local rehearsal</strong></p>
+      </div>
+      <div>
+        <h2>Agentic Workflow: MODEL reasons over evidence</h2>
+        <p>A Copilot model explains or rejects a repair. GitHub Agentic Workflows (gh-aw on Actions) is a different tool. <strong id="agentic-execution">Not active: no LLM calls</strong></p>
+      </div>
+    </section>
     <div id="notice" role="alert" hidden></div>
     <section id="native-panel" hidden aria-labelledby="native-title">
       <h2 id="native-title">Run the real workflow in Copilot.</h2>
       <p>This page observes local artifacts; it does not start models. Review the extension, run <code>npm ci</code> once, and check your Copilot sign-in and preview eligibility. The version-matched SDK runner uses <strong>GPT-6.1 Sol / max</strong> and <strong>Sonnet 5.5 / high</strong>.</p>
       <div class="command-row">
-        <code id="native-command">node .\native\Run-Sdk.mjs --live --pause</code>
+        <code id="native-command">node .\native\Run-Sdk.mjs --live --pause --walkthrough</code>
         <button id="copy-command">Copy command</button>
       </div>
       <div class="native-facts"><span id="observer-status">Checking local observer…</span><span>Preview + eligible Copilot plan required</span><span>Actual usage: inspect /workflows</span></div>
-      <p>Use <code>--rehearsal --pause</code> for an actual-runtime test without models. The SDK terminal waits for your review at the checkpoint. If you launch the extension in an app/CLI session instead, use that session's <code>/workflows</code> view. Browser approval never resumes native work.</p>
+      <p>Use <code>--rehearsal --pause --walkthrough</code> for an actual-runtime test without models. Type <strong>NEXT</strong> at each feature stop; only the final <strong>APPROVE</strong> approves the draft. The browser never resumes native work.</p>
     </section>
     <section class="runbar" aria-label="Mission controls">
       <fieldset id="scenario-controls">
@@ -337,9 +398,10 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
         </label>
       </div>
     </section>
+    <section class="feature-layout" aria-label="Execution and feature proof">
     <section aria-labelledby="graph-title">
       <div class="graph-header">
-        <h2 id="graph-title">The execution graph</h2>
+        <h2 id="graph-title">Dynamic Workflow execution graph</h2>
         <div class="run-state" aria-live="polite"><span class="state-label" id="status-label" data-state="idle">Ready</span><span id="phase-label">Choose a failure</span></div>
       </div>
       <p id="flow-summary" role="status">Choose a failure, run the rescue, and follow the evidence from left to right.</p>
@@ -347,9 +409,33 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
         <svg id="workflow-graph" viewBox="0 0 1540 365" role="group" aria-label="Major workflow stages; select a node to inspect actual execution"></svg>
         <div class="graph-foot"><span id="graph-caption">Major stages shown. Specialist nodes appear only when evidence requires them.</span><div class="legend"><span>Code + checks</span><span class="agent-key" id="specialist-legend">Local workers</span><span>Human gate</span></div></div>
       </div>
-      <div id="twist-banner" hidden><strong>Plot twist: 200 seats disappear.</strong><p>The first plan is already built. A failed acceptance check must change the next step.</p></div>
+      <div id="twist-banner" hidden><strong>Scripted demo input: 200 seats disappear.</strong><p>The first plan is already built. A failed acceptance check must change the next step.</p></div>
       <aside id="task-inspector" hidden aria-labelledby="inspector-title"><button id="close-inspector" aria-label="Close task details">Close</button><h2 id="inspector-title">Task details</h2><p id="inspector-detail"></p></aside>
       <aside id="presenter-cue" hidden><strong>Say this</strong><p id="cue-text">“Which failure should we trigger? Show of hands. We won't choose the agents; the evidence will.”</p></aside>
+    </section>
+    <aside id="feature-proof" aria-labelledby="proof-title">
+      <div id="proof-feature">FEATURE WALKTHROUGH</div>
+      <p id="proof-pause">EXECUTION PROOF</p>
+      <h2 id="proof-title">See which part is doing the work</h2>
+      <h3 class="proof-benefit-label">Why it helps</h3>
+      <p id="proof-benefit">Dynamic Workflow code selects and saves the steps. Agentic Workflow reasoning interprets and challenges evidence.</p>
+      <p id="proof-verdict-rule" hidden></p>
+      <p id="proof-execution">Offline JavaScript rehearsal. Native Copilot API is not executing.</p>
+      <div id="proof-body" class="proof-body" tabindex="0" aria-label="Feature code, input, output, and prompt">
+        <div class="proof-code-label">Relevant native code / excerpt</div>
+        <pre id="proof-code"></pre>
+        <div class="proof-data">
+          <section><h3>Input / evidence</h3><pre id="proof-input"></pre></section>
+          <section><h3>Output / handoff</h3><pre id="proof-output"></pre></section>
+        </div>
+        <details id="proof-prompt-details" hidden><summary id="proof-prompt-label">Exact model prompt</summary><pre id="proof-prompt"></pre></details>
+      </div>
+      <details id="proof-history"><summary>Inspect earlier feature proofs</summary>
+        <select id="proof-step" aria-label="Inspect an executed feature" disabled><option value="">Feature proofs appear as work executes</option></select>
+      </details>
+      <p id="proof-control-note"></p>
+      <button class="primary" id="continue-walkthrough" hidden>Continue walkthrough</button>
+    </aside>
     </section>
     <section class="results" aria-label="Measured evidence and acceptance checks">
       <div>
@@ -379,11 +465,12 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
       <details><summary>Read the actual workflow source</summary><p>This is the source bundled into both the standalone runner and the native extension. Rehearsal takes the JavaScript branch; live mode calls <code>ctx.agent</code>.</p><pre id="workflow-source"></pre></details>
       <details><summary>How to present this demo</summary>
         <ol><li>Ask the audience to choose a failure. Run “Both at once” to show parallel specialists.</li><li>Choose “Surprise me” for the new-evidence moment. Point to the failed capacity check and new branch.</li><li>Pause, explain the saved steps, then resume. At the review gate, inspect evidence before approving.</li><li>Use Native Copilot for actual model calls. If unavailable, say “This is the offline rehearsal: real checks, no LLM.”</li></ol>
+        <p>The feature walkthrough stops automatically at routing, agent explanation, new evidence, checks, and independent review. Use <strong>Continue walkthrough</strong>; final draft approval is a separate action. Choose <strong>Continuous run</strong> to skip teaching stops.</p>
         <p>Keyboard: <strong>S</strong> run/resume, <strong>P</strong> pause, <strong>V</strong> stage view. Shortcuts do not run while editing a field. Pacing includes intentional presentation delays; this is not a performance benchmark.</p>
         <label class="seed-control" for="seed-input">Synthetic fixture seed <input id="seed-input" type="number" value="42" min="1" max="9999999" step="1"></label>
       </details>
     </section>
-    <footer><span>GitHub Copilot dynamic workflows are public preview. Availability and APIs may change.<br><a href="https://docs.github.com/en/copilot/concepts/agents/dynamic-workflows" target="_blank" rel="noreferrer">Official concepts</a> · <a href="https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-dynamic-workflows" target="_blank" rel="noreferrer">Official how-to</a> · <a href="https://github.com/github/copilot-sdk/blob/v1.0.19/nodejs/docs/workflows.md" target="_blank" rel="noreferrer">SDK API</a></span><span>Built for a 2,500-person room.<br>Evidence → bounded repair → independent challenge → human checkpoint.</span></footer>
+    <footer><span>GitHub Copilot dynamic workflows are public preview. Availability and APIs may change.<br><a href="https://docs.github.com/en/copilot/concepts/agents/dynamic-workflows" target="_blank" rel="noreferrer">Official concepts</a> · <a href="https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-dynamic-workflows" target="_blank" rel="noreferrer">Official how-to</a> · <a href="https://github.com/github/copilot-sdk/blob/v1.0.19/nodejs/docs/workflows.md" target="_blank" rel="noreferrer">SDK API</a></span><span>This is the local Copilot workflow runtime.<br>GitHub Agentic Workflows (`gh-aw` on Actions) is a different tool, not executed here.</span></footer>
   </main>
   <noscript>This demo requires JavaScript. All computations are local in offline rehearsal mode.</noscript>
   <!-- BUNDLED_APPLICATION -->

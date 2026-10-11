@@ -167,20 +167,12 @@ function page(title, notes, ids = ["S1"], light = false, appendix = false) {
   pill(s, "THIS DEMO", .98, 6.30, 1.75, true, 16);
 }
 {
-  const s = page("Code owns the repeatable.\nAgents handle judgment.",
-    "4:30–5:30. Walk the mixed process: capture inputs, deterministic probes in parallel, a specialist when evidence warrants one, deterministic acceptance checks, independent challenge, and a durable pause. The toy fixture makes failures obvious. In real work, put model judgment on unstructured logs, source interpretation, and competing explanations—not arithmetic.",
+  const s = page("Two features.\nOne controlled process.",
+    "4:30–5:30. Point at the two names used throughout the live demo. Dynamic Workflow means code-controlled orchestration: routes, parallel work, journals, and checkpoints. Agentic Workflow means model reasoning inside that process: a cited repair explanation and independent challenge. The model does not invent the workflow program. GitHub Agentic Workflows on Actions is a separate engine and is not run here.",
     ["S1", "S3"]);
-  const names = ["Capture", "Inspect", "Specialize", "Verify", "Challenge", "Pause"];
-  names.forEach((name, index) => node(s, name, .70 + index * 2.00, 2.58, 1.66, .94,
-    index === 2 || index === 4, index === 2 || index === 4 ? 19 : 22));
-  for (let index = 0; index < 5; index++) line(s, 2.36 + index * 2.00, 3.05, 2.70 + index * 2.00, 3.05);
-  txt(s, "Code", .70, 3.84, 1.66, .43, 20, { color: s.soft, align: "center" });
-  txt(s, "Code", 2.70, 3.84, 1.66, .43, 20, { color: s.soft, align: "center" });
-  txt(s, "Judgment", 4.70, 3.84, 1.66, .43, 20, { color: s.accent, align: "center" });
-  txt(s, "Code", 6.70, 3.84, 1.66, .43, 20, { color: s.soft, align: "center" });
-  txt(s, "Judgment", 8.70, 3.84, 1.66, .43, 20, { color: s.accent, align: "center" });
-  txt(s, "Human", 10.70, 3.84, 1.66, .43, 20, { color: s.soft, align: "center" });
-  txt(s, "Don't spend an agent on a calculation.\nSpend one where interpretation changes the decision.", .80, 5.08, 11.80, 1.16, 30, { bold: true });
+  box(s, "Dynamic Workflow", "Code picks specialists.\nCode branches on failed checks.\nCode saves and pauses.", .76, 2.28, 5.80, 3.22, false, 30, 26);
+  box(s, "Agentic Workflow", "Model interprets evidence.\nModel explains or rejects.\nModel never rewrites code.", 6.80, 2.28, 5.80, 3.22, true, 30, 26);
+  txt(s, "Code owns the process. Models handle judgment.", .96, 6.03, 11.45, .66, 30, { bold: true, color: s.accent });
 }
 {
   const s = page("Specialists need contracts,\nnot just job titles.",
@@ -212,14 +204,24 @@ function page(title, notes, ids = ["S1"], light = false, appendix = false) {
   line(s, 7.86, 5.74, 8.64, 5.74);
 }
 {
-  const s = page("Let's put the process on stage.",
-    "7:00–7:40. Switch to the live demo after this slide. Open Launch-Rescue-Demo.html or the local server. Set Stage view for 1920×1080. Truthfully identify the mode. Native rehearsal is the actual Copilot runtime without models. Native live uses actual model calls. Offline rehearsal is local JavaScript only.",
+  const s = page("Identify the feature at every stop.",
+    "7:00–7:40. Switch to the feature walkthrough, not an uninterrupted ticket-allocation animation. At every stop identify the feature name, why it helps, the relevant API, the input, and the output. Native agentic proofs show an exact prompt and actual model response. Offline proofs say JavaScript substitute and label the prompt as a preview not sent to a model.",
     ["S2", "S3"]);
-  const image = join(root, "presentation", "assets", "demo-trace.png");
-  track(s, "image", .77, 1.79, 11.78, 4.84, "Actual working demo, cropped execution trace");
-  s.slide.addImage({ path: image, x: .77, y: 1.79, w: 11.78, h: 4.84,
-    altText: "Actual offline execution trace: retry specialist, failed acceptance check, new inventory evidence, capacity specialist, and passing second check." });
-  txt(s, "Trace detail: evidence → specialists → checks. Offline rehearsal / no LLM.", .94, 6.66, 11.45, .32, 17, { color: s.soft });
+  node(s, "Dynamic Workflow", .85, 2.00, 5.58, .94, false, 29);
+  txt(s, "CODE chooses the steps.\nBranches when checks fail.\nKeeps completed work.", 1.01, 3.18, 5.32, 1.28, 24, { bold: true });
+  node(s, "Agentic Workflow", .85, 4.75, 5.58, .94, true, 29);
+  txt(s, "MODEL interprets evidence.\nExplains or rejects the repair.", 1.01, 5.89, 5.32, .85, 24, { bold: true });
+  const image = join(root, "presentation", "assets", "native-live-call-repair.png");
+  const png = await readFile(image);
+  const scale = Math.min(5.28 / png.readUInt32BE(16), 2.30 / png.readUInt32BE(20));
+  const imageW = png.readUInt32BE(16) * scale;
+  const imageH = png.readUInt32BE(20) * scale;
+  txt(s, "Actual model handoff", 7.02, 1.89, 5.28, .47, 26, { bold: true, color: s.accent });
+  track(s, "image", 7.02, 2.64, imageW, imageH, "Actual native model and call excerpt");
+  s.slide.addImage({ path: image, x: 7.02, y: 2.64, w: imageW, h: imageH,
+    altText: "Cropped actual native model handoff showing gpt-6.1-sol max and its ctx.agent call." });
+  txt(s, "Evidence in: 500 retry requests", 7.02, 5.13, 5.28, .76, 24, { bold: true });
+  txt(s, "repair: dedupe\ncites: E-RETRY", 7.02, 6.00, 5.28, .73, 22, { fontFace: F.code });
 }
 {
   const s = page("The room picks the incident.",
@@ -232,15 +234,15 @@ function page(title, notes, ids = ["S1"], light = false, appendix = false) {
 }
 {
   const s = page("One command.\nA real Copilot workflow.",
-    "8:20–9:20, then remain in the demo. From the project folder use the supplied version-matched SDK launcher after npm ci. It launches only the reviewed project extension and defines both no-tool custom agents explicitly. Keep the SDK terminal open at the checkpoint and type APPROVE there after review. The browser is read-only. For an app-created run, use that app session's Workflows panel. Do not assume CLI and SDK persisted sessions are interoperable.",
+    "8:20–9:20. Launch the version-matched SDK with --walkthrough. It pauses at feature boundaries using the actual Copilot runtime. Type NEXT at those teaching stops; NEXT is not draft approval. Type APPROVE only at the separate final human checkpoint. The browser shows exact handoffs and never resumes native work. Agent models and effort remain explicit.",
     ["S2", "S4", "S5", "S19", "S20"]);
   shape(s, "roundRect", .72, 2.24, 11.90, 1.65, s.surface, { rectRadius: .15 });
-  txt(s, "node .\\native\\Run-Sdk.mjs --live --pause", 1.05, 2.76, 11.23, .57, 28, { fontFace: F.code, color: s.accent });
+  txt(s, "node .\\native\\Run-Sdk.mjs --live --pause --walkthrough", 1.05, 2.76, 11.23, .57, 26, { fontFace: F.code, color: s.accent });
   txt(s, "Analysis", .89, 4.45, 5.37, .50, 24, { color: s.soft });
   txt(s, "GPT-6.1 Sol / max", .89, 5.10, 5.60, .65, 32, { bold: true });
   txt(s, "Independent challenge", 7.01, 4.45, 5.37, .50, 24, { color: s.soft });
   txt(s, "Sonnet 5.5 / high", 7.01, 5.10, 5.60, .65, 32, { bold: true });
-  txt(s, "No silent Auto fallback. Live calls consume AI credits.", .92, 6.18, 11.5, .45, 23, { color: s.soft });
+  txt(s, "5 teaching stops: NEXT. Final draft review: APPROVE.", .92, 6.18, 11.5, .55, 25, { color: s.soft, bold: true });
 }
 {
   const s = page("The surprise is new evidence,\nnot a new prompt.",

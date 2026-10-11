@@ -116,6 +116,14 @@ The completed native evidence is in `evidence\native-live-proof.json` and `evide
 
 The stage kit now binds these proofs to the tested native source and bundle hashes. Native progress and lifecycle outcomes have separate writers: per-attempt outcome records and a host-close marker prevent a stale reconcile from undoing HOLD or replacing resumed progress. The browser observes actual host liveness, serializes polling, rejects older snapshots, and never presents a finished draft-only run as an open approval gate.
 
+## Making the two features visible
+
+The default **Feature walkthrough** pauses at routing, specialist explanation, adaptation, verification, and independent review. Each proof is emitted by the executing workflow and contains its relevant code excerpt, input, output, and benefit. Agent handoffs include the exact supplied prompt, validated response, requested model/effort, and whether a saved result was reused.
+
+In native mode, `--walkthrough` uses durable `ctx.pause` teaching checkpoints. **NEXT** resumes the same run to the next lesson; it is not accepted as final approval. Only the separate final **APPROVE** checkpoint approves the synthetic local draft. Offline mode uses JavaScript checkpoint behavior and marks every would-be agent step as **JS SUBSTITUTE**, with a native prompt preview that was not sent to a model.
+
+The visible phrase **Agentic Workflow** describes model reasoning inside this local Copilot process, not an executed `gh-aw` workflow. The model explains and challenges bounded actions; code still defines orchestration and verifies outcomes. No claim is made that agents rewrite the workflow at runtime. S1-S3.
+
 ## Claims deliberately excluded
 
 No "2,500 parallel agents." No guaranteed speedup, token savings, cost ceiling, or production capacity benchmark. No fabricated customer results. No claim that models are deterministic. No universal cross-client feature parity. No claim that a UI checkpoint or `tools: []` contains arbitrary extension code. No implicit deployment, remote writes, or ticket purchases.

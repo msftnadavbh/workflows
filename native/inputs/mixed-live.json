@@ -2,5 +2,6 @@
   "scenario": "mixed",
   "mode": "live",
   "seed": 42,
-  "pauseForApproval": true
+  "pauseForApproval": true,
+  "walkthrough": true
 }

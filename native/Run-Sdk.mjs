@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { CopilotClient, RuntimeConnection } from "@github/copilot-sdk";
-import { ANALYST, REVIEWER, validateArgs } from "../dist/core.mjs";
+import { ANALYST, REVIEWER, isWalkthroughCheckpoint, validateArgs } from "../dist/core.mjs";
 import { reconcileNativeRun } from "../dist/reconcile.mjs";
 import { promptCheckpoint } from "./checkpoint.mjs";
 
@@ -72,38 +72,42 @@ export async function withNativeSession(run) {
 async function main() {
   const { values } = parseArgs({ options: {
     live: { type: "boolean" }, rehearsal: { type: "boolean" }, pause: { type: "boolean" },
+    walkthrough: { type: "boolean" },
     scenario: { type: "string", default: "mixed" },
   }, strict: true, allowPositionals: false });
   if (values.live && values.rehearsal) throw new Error("Choose --live or --rehearsal, not both.");
   const args = validateArgs({
     scenario: values.scenario, mode: values.live ? "live" : "rehearsal",
-    seed: 42, pauseForApproval: values.pause ?? false,
+    seed: 42, pauseForApproval: values.pause ?? false, walkthrough: values.walkthrough ?? false,
   });
-  if (args.pauseForApproval && !stdin.isTTY) {
+  if ((args.pauseForApproval || args.walkthrough) && !stdin.isTTY) {
     throw new Error("A review checkpoint needs an interactive terminal. Omit --pause for a draft-only run; no approval will be claimed.");
   }
   await withNativeSession(async ({ session, runtime }) => {
     console.log(`Native SDK runtime ${runtime.version}; owning session ${session.sessionId}.`);
     console.log(args.mode === "live" ? "Actual model calls: GPT-6.1 Sol / max, Sonnet 5.5 / high. AI credits are consumed."
       : "Actual Copilot workflow runtime. Rehearsal workers only; no model calls.");
-    const result = await session.workflow.run("launch-rescue", { args, notifyOnComplete: false });
-    await reconcileNativeRun(root, result);
-    let final = result;
-    if (result.status === "paused") {
+    let final = await session.workflow.run("launch-rescue", { args, notifyOnComplete: false });
+    const runId = final.runId;
+    await reconcileNativeRun(root, final);
+    while (final.status === "paused") {
       try {
-        console.log("Inspect the local observer or runs\\RUN_ID\\report.json. This checkpoint does not authorize deployment.");
-        const answer = await promptCheckpoint();
-        if (answer === "approve") {
-          final = await session.workflow.resume(result.runId, { notifyOnComplete: false });
-          await reconcileNativeRun(root, final, { hostClosed: final.status === "paused" });
-        }
-        else {
-          await reconcileNativeRun(root, result, { hostClosed: true });
+        const key = final.pauseInfo?.type === "checkpoint" ? final.pauseInfo.key : null;
+        const walkthrough = isWalkthroughCheckpoint(key);
+        console.log(walkthrough
+          ? "Feature walkthrough stopped. Read the highlighted feature, relevant code, input, and result in the browser."
+          : "Review the synthetic draft and its evidence. This checkpoint does not authorize deployment.");
+        const answer = await promptCheckpoint(undefined, undefined, walkthrough ? "NEXT" : "APPROVE");
+        if (answer === "hold") {
+          await reconcileNativeRun(root, final, { hostClosed: true });
           console.log("Held at the checkpoint. No approval recorded. This SDK host will exit; start a new run to continue.");
+          break;
         }
+        final = await session.workflow.resume(runId, { notifyOnComplete: false });
+        await reconcileNativeRun(root, final);
       } catch (error) {
         try {
-          final = await session.workflow.getRun(result.runId);
+          final = await session.workflow.getRun(runId);
           await reconcileNativeRun(root, final, { hostClosed: true });
         } catch (observationError) {
           throw new AggregateError([error, observationError], "Checkpoint failed and its final state could not be observed.");
@@ -112,7 +116,7 @@ async function main() {
       }
     }
     await mkdir(join(root, "runs"), { recursive: true });
-    const envelope = join(root, "runs", `sdk-envelope-${result.runId}.json`);
+    const envelope = join(root, "runs", `sdk-envelope-${runId}.json`);
     await writeFile(envelope, JSON.stringify(final, null, 2), "utf8");
     console.log(`Native status: ${final.status}; envelope: ${envelope}`);
     if (final.status !== "completed" && final.status !== "paused") {

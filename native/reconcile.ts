@@ -54,6 +54,7 @@ export async function reconcileNativeRun(root: string, run: WorkflowRunResult, o
   }
   await writeAtomic(join(directory, `lifecycle-${attempt}-${run.status}.json`), {
     runId: run.runId, attempt, status: run.status, updatedAt,
+    pauseKey: run.status === "paused" && run.pauseInfo?.type === "checkpoint" ? run.pauseInfo.key : null,
     error: run.status === "error" || run.status === "halted" ? run.error ?? run.reason ?? "Native workflow stopped; inspect its run details." : null,
   });
 }
@@ -74,7 +75,8 @@ export async function readNativeState(
       }
       const attempt = readAttempt(value.attempt);
       if (name !== `lifecycle-${attempt}-${value.status}.json`) throw new Error("Native lifecycle identity does not match its filename.");
-      return { attempt, status: value.status, updatedAt: value.updatedAt, error: value.error };
+      return { attempt, status: value.status, updatedAt: value.updatedAt, error: value.error,
+        pauseKey: typeof value.pauseKey === "string" ? value.pauseKey : null };
     }));
   lifecycle.sort((left, right) => right.attempt - left.attempt
     || (statusOrder[right.status] ?? 0) - (statusOrder[left.status] ?? 0));
@@ -83,6 +85,7 @@ export async function readNativeState(
   if (latest) {
     result.attempt = latest.attempt;
     result.runtimeStatus = latest.status;
+    result.pauseKey = latest.pauseKey;
     result.status = latest.status === "paused" ? isRecord(result.report) ? "awaiting-approval" : "paused" : latest.status;
     result.error = latest.error;
     if (typeof result.updatedAt !== "string" || Date.parse(latest.updatedAt) > Date.parse(result.updatedAt)) {

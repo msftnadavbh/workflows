@@ -19,6 +19,7 @@ async function nativeFixture(overrides = {}) {
 
 async function begin(page, scenario) {
   await page.goto("/?scoutTheme=dark");
+  await page.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
   await page.getByLabel("Presentation pacing").selectOption("0");
   await page.locator(`[data-scenario="${scenario}"]`).click();
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
@@ -59,6 +60,7 @@ for (const [scenario, confirmed, waitlisted] of [
 
 test("pause, reload, and resume preserve a saved run", async ({ page }) => {
   await page.goto("/?scoutTheme=dark");
+  await page.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(page.locator("#status-label")).toHaveText("Running");
   await page.getByRole("button", { name: "Pause", exact: true }).click();
@@ -129,6 +131,7 @@ test("the portable HTML executes offline directly from file:// and preserves its
   const requests = [];
   page.on("request", (request) => { if (/^https?:/.test(request.url())) requests.push(request.url()); });
   await page.goto(`${pathToFileURL(resolve("Launch-Rescue-Demo.html")).href}?scoutTheme=dark`);
+  await page.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
   await page.getByLabel("Presentation pacing").selectOption("0");
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
@@ -231,6 +234,7 @@ test("an older native snapshot cannot regress the current completed run", async 
 
 test("the narrated normal-speed flow exposes the failed check before recovery", async ({ page }) => {
   await page.goto("/?scoutTheme=dark");
+  await page.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
   await page.getByRole("button", { name: "Stage view", exact: true }).click();
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(page.locator('[data-task="verify-1"]')).toHaveAttribute("data-state", "failed");
@@ -270,6 +274,72 @@ test("keyboard inspection exposes the same measured failure as pointer inspectio
   await page.getByRole("button", { name: "Approve local draft", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#status-label")).toHaveText("Draft approved");
+});
+
+test("the default demo teaches Dynamic and Agentic Workflows as separate executed steps", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto("/?scoutTheme=dark");
+  await expect(page.getByRole("button", { name: "Feature walkthrough", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "Dynamic Workflow: CODE controls execution", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Agentic Workflow: MODEL reasons over evidence", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Stage view", exact: true }).click();
+  await page.getByLabel("Presentation pacing").selectOption("0");
+  await page.getByRole("button", { name: "Run rescue", exact: true }).click();
+  const lessons = ["route", "repair", "adapt", "verify", "review"];
+  for (const id of lessons) {
+    await expect(page.locator("#status-label")).toHaveText("Feature walkthrough paused");
+    await expect(page.locator("#proof-step")).toHaveValue(id);
+    await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
+    expect(await page.locator("#continue-walkthrough").evaluate((element) => element.getBoundingClientRect().bottom <= innerHeight)).toBe(true);
+    if (id === "route") {
+      await expect(page.locator("#proof-feature")).toHaveText("DYNAMIC WORKFLOW");
+      await expect(page.locator("#proof-code")).toContainText("ctx.parallel");
+      await expect(page.locator("#proof-output")).toContainText("dedupe");
+      await expect(page.locator("#proof-benefit")).toContainText("0 unavailable seats skip capacity work");
+      await expect(page.locator('[data-task="scan-retries"] .graph-kind')).toHaveText("PARALLEL SCAN / CODE");
+      await expect(page.locator('[data-task="dedupe-specialist-1"]')).toHaveCount(0);
+    }
+    if (id === "repair" || id === "review") {
+      await expect(page.locator("#proof-feature")).toHaveText("AGENTIC WORKFLOW");
+      await expect(page.locator("#proof-execution")).toContainText("JavaScript substitute");
+      await expect(page.locator("#proof-execution")).toContainText("No agent or LLM");
+      await expect(page.locator("#proof-output")).toContainText("rationale");
+      await page.locator("#proof-prompt-label").click();
+      await expect(page.locator("#proof-prompt-label")).toContainText("not sent in rehearsal");
+      await expect(page.locator("#proof-prompt")).toContainText(id === "repair" ? "E-RETRY" : "Independently challenge");
+      await page.locator("#proof-prompt-label").click();
+    }
+    if (id === "review") await expect(page.locator("#proof-verdict-rule")).toContainText("REJECT → run held");
+    if (id === "adapt") {
+      await expect(page.locator("#proof-input")).toContainText("200 seats over capacity");
+      await expect(page.locator("#proof-output")).toContainText("capacity specialist");
+      await expect(page.locator('[data-task="capacity-specialist-2"]')).toHaveAttribute("data-state", "waiting");
+    }
+    await page.getByRole("button", { name: "Continue walkthrough", exact: true }).click();
+  }
+  await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
+  await expect(page.locator("#proof-feature")).toHaveText("DYNAMIC WORKFLOW / HUMAN");
+  await page.locator('[data-task="verify-1"]').click();
+  await page.getByRole("button", { name: "Close task details" }).click();
+  await expect(page.locator("#proof-step")).toHaveValue("approval");
+  await page.getByRole("button", { name: "Approve local draft", exact: true }).click();
+  await expect(page.locator("#status-label")).toHaveText("Draft approved");
+  await expect(page.locator("#proof-output")).toContainText("reusedStepsThisAttempt");
+  await page.reload();
+  await expect(page.locator("#status-label")).toHaveText("Draft approved");
+});
+
+test("reloading a teaching stop preserves the lesson and cannot approve the draft", async ({ page }) => {
+  await page.goto("/?scoutTheme=dark");
+  await page.getByLabel("Presentation pacing").selectOption("0");
+  await page.getByRole("button", { name: "Run rescue", exact: true }).click();
+  await expect(page.locator("#proof-step")).toHaveValue("route");
+  await page.reload();
+  await expect(page.locator("#status-label")).toHaveText("Feature walkthrough paused");
+  await expect(page.locator("#proof-step")).toHaveValue("route");
+  await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
+  await page.getByRole("button", { name: "Continue walkthrough", exact: true }).click();
+  await expect(page.locator("#proof-step")).toHaveValue("repair");
 });
 
 test("native checkpoint review instructions and evidence control fit the stage viewport", async ({ page }) => {
@@ -328,6 +398,7 @@ test("capture desktop and mobile evidence without page-level overflow", async ({
   }, clippedPaths);
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await mobile.goto("http://127.0.0.1:4173/?scoutTheme=light");
+  await mobile.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
   await mobile.getByLabel("Presentation pacing").selectOption("0");
   await mobile.getByRole("button", { name: "Room switch", exact: true }).click();
   await mobile.getByRole("button", { name: "Run rescue", exact: true }).click();

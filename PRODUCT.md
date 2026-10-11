@@ -14,7 +14,7 @@ Assumption for this delivery: a mixed developer and engineering-lead audience, a
 
 ## Product Purpose
 
-Make the difference between autonomy, model-chosen delegation, and code-defined dynamic workflows understandable through a working demonstration and a PowerPoint presentation.
+Make Dynamic Workflow orchestration and Agentic Workflow reasoning unmistakably different in the demo itself, with paced feature stops, relevant code, actual inputs and outputs, and a separate human decision.
 
 ## Positioning
 
@@ -22,7 +22,7 @@ A synthetic conference ticket launch fails in different ways. Executable checks 
 
 ## Operating Context
 
-The workspace is a Windows folder, not a Git repository. Node.js and GitHub Copilot CLI 1.0.94-3 are installed. The pinned SDK 1.0.19 supplies a version-matched 1.0.95 runtime for the tested stage launcher. The demo must be portable, resettable, and useful without a network connection.
+The project is a Windows-hosted Git repository with a public source distribution. Node.js and GitHub Copilot CLI 1.0.94-3 are installed. The pinned SDK 1.0.19 supplies a version-matched 1.0.95 runtime for the tested stage launcher. The demo must remain local, portable, resettable, and useful without a network connection.
 
 ## Capabilities and Constraints
 
@@ -34,6 +34,7 @@ The workspace is a Windows folder, not a Git repository. Node.js and GitHub Copi
 - A local approval checkpoint demonstrates a human decision; it is not a security sandbox.
 - Preserve the distinction between Copilot dynamic workflows and the separate GitHub Agentic Workflows project.
 - Describe public-preview functionality and approximate AI-credit limits accurately.
+- The guided feature walkthrough is enabled by default in the standalone demo. Teaching continuation must never count as final draft approval.
 
 ## Evidence on Hand
 

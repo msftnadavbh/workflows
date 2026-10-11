@@ -12,9 +12,10 @@ import { withNativeSession } from "../native/Run-Sdk.mjs";
 import { promptCheckpoint } from "../native/checkpoint.mjs";
 import { nativeBuildFingerprint } from "../native/verification.mjs";
 import { readNativeState, reconcileNativeRun } from "../dist/reconcile.mjs";
+import { isWalkthroughCheckpoint } from "../dist/core.mjs";
 
 const root = fileURLToPath(new URL("..\\", import.meta.url));
-const { values } = parseArgs({ options: { live: { type: "boolean" } }, strict: true });
+const { values } = parseArgs({ options: { live: { type: "boolean" }, walkthrough: { type: "boolean" } }, strict: true });
 const mode = values.live ? "live" : "rehearsal";
 const nativeBuild = await nativeBuildFingerprint(root);
 const browserHash = createHash("sha256").update(await readFile(join(root, "Launch-Rescue-Demo.html"))).digest("hex");
@@ -46,9 +47,70 @@ try {
       }
     }
     console.log(`E2E: real Copilot runtime ${runtime.version}, ${mode} mode, actual browser observer.`);
-    const paused = await session.workflow.run("launch-rescue", {
-      args: { scenario: "mixed", mode, seed: 42, pauseForApproval: true }, notifyOnComplete: false,
+    let paused = await session.workflow.run("launch-rescue", {
+      args: { scenario: "mixed", mode, seed: 42, pauseForApproval: true, walkthrough: values.walkthrough ?? false }, notifyOnComplete: false,
     });
+    const featureStops = [];
+    while (paused.status === "paused" && paused.pauseInfo?.type === "checkpoint" && isWalkthroughCheckpoint(paused.pauseInfo.key)) {
+      await reconcileNativeRun(root, paused);
+      const featureId = paused.pauseInfo.key.split(":").at(-1);
+      await expect(page.locator("#status-label")).toHaveText("Feature walkthrough paused");
+      await expect(page.locator("#proof-step")).toHaveValue(featureId);
+      await expect(page.locator("#proof-pause")).toContainText("NEXT");
+      await expect(page.getByRole("button", { name: "Continue walkthrough", exact: true })).toBeHidden();
+      await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
+      const observation = await session.workflow.getRunDetail(paused.runId);
+      featureStops.push({ featureId, agents: observation.agents.length });
+      if (featureId === "route") {
+        await expect(page.locator("#proof-feature")).toHaveText("DYNAMIC WORKFLOW");
+        await expect(page.locator("#proof-code")).toContainText("ctx.parallel");
+        await expect(page.locator("#proof-output")).toContainText("dedupe");
+        assert.equal(observation.agents.length, 0, "Code selects the branch before agents are launched.");
+      }
+      if (featureId === "repair" || featureId === "review") {
+        await expect(page.locator("#proof-feature")).toHaveText("AGENTIC WORKFLOW");
+        await expect(page.locator("#proof-code")).toContainText("ctx.agent");
+        await expect(page.locator("#proof-output")).toContainText("rationale");
+        await expect(page.locator("#proof-execution")).toContainText(mode === "live" ? "Copilot model result" : "No agent or LLM");
+        const state = await readNativeState(root, paused.runId);
+        const proof = state.events.find((event) => event.type === "feature" && event.id === featureId);
+        assert.ok(proof?.handoffs.length);
+        await page.locator("#proof-prompt-label").click();
+        assert.ok((await page.locator("#proof-prompt").textContent()).includes(proof.handoffs[0].prompt),
+          "The browser must show the exact prompt supplied to this model handoff.");
+        await page.locator("#proof-prompt-label").click();
+        await page.locator("#proof-body").evaluate((element) => { element.scrollTop = 0; });
+      }
+      if (featureId === "adapt") {
+        await expect(page.locator("#proof-feature")).toHaveText("DYNAMIC WORKFLOW");
+        await expect(page.locator("#proof-input")).toContainText("200 seats over capacity");
+        await expect(page.locator("#proof-output")).toContainText("capacity specialist");
+        assert.equal(observation.agents.length, mode === "live" ? 1 : 0);
+      }
+      if (["route", "repair", "adapt", "review"].includes(featureId)) {
+        await page.screenshot({ path: join(assets, `native-${mode}-feature-${featureId}.png`), fullPage: false });
+        await page.locator("#feature-proof").screenshot({ path: join(assets, `native-${mode}-proof-${featureId}.png`) });
+        if (featureId === "repair") {
+          const execution = await page.locator("#proof-execution").boundingBox();
+          const code = await page.locator("#proof-code").boundingBox();
+          assert.ok(execution && code);
+          await page.screenshot({
+            path: join(assets, `native-${mode}-call-repair.png`),
+            clip: { x: code.x, y: execution.y - 4, width: code.width, height: code.y + code.height - execution.y + 8 },
+          });
+        }
+      }
+      const input = new PassThrough();
+      const output = new PassThrough();
+      const decision = promptCheckpoint(input, output, "NEXT");
+      input.write("next\n");
+      assert.equal(await decision, "next");
+      input.destroy(); output.destroy();
+      paused = await session.workflow.resume(paused.runId, { notifyOnComplete: false });
+    }
+    if (values.walkthrough) {
+      assert.deepEqual(featureStops.map((stop) => stop.featureId), ["route", "repair", "adapt", "verify", "review"]);
+    }
     assert.equal(paused.status, "paused", `Expected a checkpoint; got ${paused.status}: ${paused.error ?? paused.reason ?? ""}`);
     await reconcileNativeRun(root, paused);
     await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
@@ -64,6 +126,7 @@ try {
     await expect(page.locator("#inspector-detail")).toContainText("200 seats over capacity");
     await expect(page.locator("#inspector-detail")).toContainText("0 duplicate outcomes");
     await page.getByRole("button", { name: "Close task details" }).click();
+    await expect(page.locator("#proof-step")).toHaveValue("approval");
     const checkpointFits = await page.evaluate(() => {
       const gate = document.querySelector("#approval-panel").getBoundingClientRect();
       return gate.top >= 0 && gate.bottom <= innerHeight && document.documentElement.scrollHeight <= innerHeight;
@@ -108,6 +171,7 @@ try {
       }
     }
     await expect(page.locator("#status-label")).toHaveText("Draft approved");
+    await expect(page.locator("#proof-step")).toHaveValue("complete");
     await expect(page.locator("#mode-label")).toContainText("COMPLETED");
     await expect(page.locator("#duplicate-count")).toHaveText("0");
     await expect(page.locator("#oversold-count")).toHaveText("0");
@@ -125,6 +189,7 @@ try {
       browserExportedCurrentRun: exported.report.runId === completed.runId,
       browserApprovalUnavailable: true, inspectorExplainsFailure: true,
       agentsAtCheckpoint: atCheckpoint.agents.length, agentsAddedOnResume: detail.agents.length - atCheckpoint.agents.length,
+      featureStops, walkthrough: values.walkthrough ?? false,
       checkpointFitsViewport: checkpointFits, pageErrors,
       verifiedCounts: completed.result.after, note: "Synthetic local draft; no deployment, purchase, or remote write.",
     };
@@ -140,6 +205,7 @@ try {
         })),
         explicitReasoningOptions: { analyst: "max", independentReviewer: "high" },
         report: completed.result, browserE2E: true, note: evidence.note,
+        featureStops,
       }, null, 2), "utf8");
     }
     assert.ok(checkpointFits, "The native checkpoint instructions and evidence control must fit the 1080p stage viewport.");

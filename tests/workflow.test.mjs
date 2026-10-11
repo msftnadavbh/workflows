@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ANALYST, REVIEWER, VERSION, runLaunchRescue, validateArgs } from "../dist/core.mjs";
+import { ANALYST, REVIEWER, VERSION, isWalkthroughCheckpoint, runLaunchRescue, validateArgs } from "../dist/core.mjs";
 import { CheckpointPause, LocalContext, PresenterPause, UserCancel, newJournal } from "../dist/local-context.mjs";
 
 function recorder() {
@@ -92,7 +92,7 @@ function liveStub(args, respond) {
     },
     async agent(prompt, options) { calls.push({ prompt, options }); return respond(prompt, options); },
     async pause(key) {
-      if (!checkpoints.has(key)) { checkpoints.add(key); throw new CheckpointPause(); }
+      if (!checkpoints.has(key)) { checkpoints.add(key); throw new CheckpointPause(key); }
     },
   };
   return { ctx, calls };
@@ -194,4 +194,68 @@ test("hard runtime failures propagate rather than becoming ordinary null results
     throw error;
   });
   await assert.rejects(runLaunchRescue(ctx, async () => {}), /workflow_limit_reached/);
+});
+
+for (const scenario of ["retries", "capacity", "parallel", "mixed"]) {
+  test(`${scenario}: guided feature stops are durable and distinct from final approval`, async () => {
+      const args = validateArgs({ scenario, walkthrough: true, pauseForApproval: true });
+      const journal = newJournal(args);
+      const stops = [];
+      const producers = new Map();
+      let report;
+      for (let attempt = 0; attempt < 10 && !report; attempt++) {
+        const ctx = new LocalContext(journal);
+        try { report = await runLaunchRescue(ctx, async () => {}); }
+        catch (error) {
+          assert.ok(error instanceof CheckpointPause);
+          stops.push(error.key);
+        }
+        for (const [key, count] of ctx.producerCounts) producers.set(key, (producers.get(key) ?? 0) + count);
+      }
+      assert.ok(report);
+      assert.equal(report.status, "approved");
+      const lessons = ["route", "repair", ...(scenario === "mixed" ? ["adapt"] : []), "verify", "review"];
+      assert.deepEqual(stops.filter(isWalkthroughCheckpoint), lessons.map((id) => `${VERSION}:walkthrough:${id}`));
+      assert.equal(stops.at(-1), `${VERSION}:approve-local-draft`);
+      assert.ok([...producers.values()].every((count) => count === 1), "Saved producers must not execute again on NEXT.");
+  });
+}
+
+test("feature proofs contain actual supplied prompts and validated agent responses", async () => {
+    const { ctx, calls } = liveStub(validateArgs({ scenario: "mixed", mode: "live", walkthrough: true, pauseForApproval: true }), validAgent);
+    const proofs = new Map();
+    const stops = [];
+    let result;
+    for (let attempt = 0; attempt < 10 && !result; attempt++) {
+      try { result = await runLaunchRescue(ctx, async (event) => { if (event.type === "feature") proofs.set(event.id, event); }); }
+      catch (error) {
+        assert.ok(error instanceof CheckpointPause);
+        stops.push({ key: error.key, agentCalls: calls.length });
+      }
+    }
+    assert.equal(calls.length, 3);
+    assert.deepEqual(stops.filter((stop) => stop.key.endsWith(":route")).map((stop) => stop.agentCalls), [0]);
+    assert.deepEqual(stops.filter((stop) => stop.key.endsWith(":adapt")).map((stop) => stop.agentCalls), [1]);
+    const handoffs = [...proofs.values()].flatMap((proof) => proof.handoffs);
+    for (const call of calls) {
+      const proof = handoffs.find((handoff) => handoff.label === call.options.label);
+      assert.ok(proof);
+      assert.equal(proof.source, "model");
+      assert.equal(proof.prompt, call.prompt);
+      assert.equal(proof.model, call.options.model);
+      assert.equal(proof.reasoningEffort, call.options.reasoningEffort);
+      assert.ok(proof.result.rationale);
+    }
+    assert.ok(proofs.get("complete").output.reusedStepsThisAttempt > 0);
+});
+
+test("rehearsal feature proofs never claim that their JavaScript substitutes are agents", async () => {
+    const ctx = new LocalContext(newJournal(validateArgs({ scenario: "mixed", pauseForApproval: false })));
+    const proofs = [];
+    await runLaunchRescue(ctx, async (event) => { if (event.type === "feature") proofs.push(event); });
+    const handoffs = proofs.flatMap((proof) => proof.handoffs);
+    assert.equal(handoffs.length, 3);
+    assert.ok(handoffs.every((handoff) => handoff.source === "javascript" && handoff.model === null && handoff.reasoningEffort === null));
+    assert.ok(proofs.some((proof) => proof.feature === "dynamic"));
+    assert.ok(proofs.some((proof) => proof.feature === "checks"));
 });

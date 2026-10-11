@@ -21,6 +21,17 @@ test("only an explicit HOLD decision closes the checkpoint without approval", as
   assert.equal(calls, 3);
 });
 
+test("NEXT advances a teaching checkpoint but cannot approve the final draft", async () => {
+  const teaching = ["APPROVE", "next"];
+  let index = 0;
+  assert.equal(await readCheckpointDecision(async () => teaching[index++], () => {}, "NEXT"), "next");
+  assert.equal(index, 2);
+  const review = ["NEXT", "approve"];
+  index = 0;
+  assert.equal(await readCheckpointDecision(async () => review[index++], () => {}), "approve");
+  assert.equal(index, 2);
+});
+
 test("EOF aborts a pending checkpoint instead of leaving its question hung", { timeout: 2000 }, async () => {
   const input = new PassThrough();
   const output = new PassThrough();

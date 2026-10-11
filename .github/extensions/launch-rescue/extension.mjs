@@ -8,7 +8,7 @@ import {
 } from "@github/copilot-sdk/extension";
 
 // demo/core.ts
-var VERSION = "launch-rescue-v2";
+var VERSION = "launch-rescue-v3";
 var ATTENDEES = 2500;
 var ANALYST = { model: "gpt-6.1-sol", reasoningEffort: "max", agent: "launch-analyst" };
 var REVIEWER = { model: "claude-sonnet-5.5", reasoningEffort: "high", agent: "launch-reviewer" };
@@ -31,14 +31,15 @@ function isJsonValue(value, depth = 0) {
 }
 function validateArgs(value) {
   if (!isRecord(value)) throw new WorkflowError("Workflow inputs must be a JSON object.");
-  const allowed = /* @__PURE__ */ new Set(["scenario", "mode", "seed", "pauseForApproval"]);
+  const allowed = /* @__PURE__ */ new Set(["scenario", "mode", "seed", "pauseForApproval", "walkthrough"]);
   if (Object.keys(value).some((key) => !allowed.has(key))) {
-    throw new WorkflowError("Unknown workflow input. Allowed: scenario, mode, seed, pauseForApproval.");
+    throw new WorkflowError("Unknown workflow input. Allowed: scenario, mode, seed, pauseForApproval, walkthrough.");
   }
   const scenario = value.scenario ?? "mixed";
   const mode = value.mode ?? "rehearsal";
   const seed = value.seed ?? 42;
   const pauseForApproval = value.pauseForApproval ?? true;
+  const walkthrough = value.walkthrough ?? false;
   if (scenario !== "retries" && scenario !== "capacity" && scenario !== "parallel" && scenario !== "mixed") {
     throw new WorkflowError("Choose retries, capacity, parallel, or mixed.");
   }
@@ -47,7 +48,8 @@ function validateArgs(value) {
     throw new WorkflowError("Seed must be an integer from 1 to 9999999.");
   }
   if (typeof pauseForApproval !== "boolean") throw new WorkflowError("pauseForApproval must be boolean.");
-  return { scenario, mode, seed, pauseForApproval };
+  if (typeof walkthrough !== "boolean") throw new WorkflowError("walkthrough must be boolean.");
+  return { scenario, mode, seed, pauseForApproval, walkthrough };
 }
 function makeFixture(args, roomChanged = false) {
   let state = args.seed >>> 0;
@@ -317,6 +319,8 @@ async function runLaunchRescue(ctx, emit) {
   const initialFixture = makeFixture(args);
   const policy = { dedupe: false, capacity: false };
   const proposals = [];
+  const reusedTasks = /* @__PURE__ */ new Set();
+  const handoffs = /* @__PURE__ */ new Map();
   const kind = args.mode === "live" ? "agent" : "worker";
   const phase = async (title) => {
     abortIfNeeded(ctx);
@@ -328,7 +332,12 @@ async function runLaunchRescue(ctx, emit) {
     await emit({ type: "task", id, title, kind: taskKind, state: "running", dependsOn, detail });
     let value;
     try {
-      value = await ctx.step(`${VERSION}:${id}`, producer);
+      let produced = false;
+      value = await ctx.step(`${VERSION}:${id}`, () => {
+        produced = true;
+        return producer();
+      });
+      if (!produced) reusedTasks.add(id);
     } catch (error) {
       if (!ctx.signal.aborted) {
         const message = error instanceof Error ? error.message : String(error);
@@ -338,36 +347,53 @@ async function runLaunchRescue(ctx, emit) {
       throw error;
     }
     abortIfNeeded(ctx);
-    await emit({ type: "task", id, title, kind: taskKind, state: "done", dependsOn, detail });
+    await emit({ type: "task", id, title, kind: taskKind, state: "done", dependsOn, detail, reused: reusedTasks.has(id) });
     return value;
+  };
+  const explain = async (proof) => {
+    await emit({ type: "feature", ...structuredClone(proof) });
+    if (args.walkthrough && proof.pause) {
+      await ctx.pause(`${VERSION}:walkthrough:${proof.id}`);
+      abortIfNeeded(ctx);
+    }
   };
   const specialist = async (repair, evidence2, round, dependency) => {
     const id = `${repair}-specialist-${round}`;
     const title = repair === "dedupe" ? "Retry specialist" : "Capacity specialist";
     const snapshot = scopedEvidence(repair, evidence2);
     const detail = args.mode === "live" ? "GPT-6.1 Sol / max" : "Local JavaScript worker / no LLM";
+    const prompt = [
+      "Analyze this synthetic conference-launch fixture. Use no tools and do not delegate.",
+      `Observation round: ${round}. You see only your specialist's immutable evidence snapshot.`,
+      `Your bounded repair is ${repair}. Return repair, rationale, and evidenceIds.`,
+      repair === "dedupe" ? "Reuse the first decision by ticket ID." : "Use current room inventory and waitlist excess attendees.",
+      "Discuss only your supplied evidence. Do not speculate about other components or claim tests pass.",
+      "Deterministic code verifies the choice. Cite only supplied evidence IDs.",
+      OUTPUT_CONTRACT,
+      `Evidence: ${JSON.stringify(snapshot)}`
+    ].join("\n");
     const value = await task(id, title, kind, [dependency], async () => {
       if (args.mode === "rehearsal") return {
         ...localProposal(repair, snapshot),
         round,
         evidenceSnapshot: snapshot
       };
-      const prompt = [
-        "Analyze this synthetic conference-launch fixture. Use no tools and do not delegate.",
-        `Observation round: ${round}. You see only your specialist's immutable evidence snapshot.`,
-        `Your bounded repair is ${repair}. Return repair, rationale, and evidenceIds.`,
-        repair === "dedupe" ? "Reuse the first decision by ticket ID." : "Use current room inventory and waitlist excess attendees.",
-        "Discuss only your supplied evidence. Do not speculate about other components or claim tests pass.",
-        "Deterministic code verifies the choice. Cite only supplied evidence IDs.",
-        OUTPUT_CONTRACT,
-        `Evidence: ${JSON.stringify(snapshot)}`
-      ].join("\n");
       const options = { ...ANALYST, label: id, schema: proposalSchema(repair) };
-      const result = await ctx.agent(prompt, options);
-      if (result === null) throw new WorkflowError(`${title} returned no usable result. Retry or use the labeled rehearsal.`);
-      return { ...validateProposal(result, repair, snapshot), round, evidenceSnapshot: snapshot };
+      const result2 = await ctx.agent(prompt, options);
+      if (result2 === null) throw new WorkflowError(`${title} returned no usable result. Retry or use the labeled rehearsal.`);
+      return { ...validateProposal(result2, repair, snapshot), round, evidenceSnapshot: snapshot };
     }, detail);
-    return validateRepairRecord(value, repair, round, snapshot);
+    const result = validateRepairRecord(value, repair, round, snapshot);
+    handoffs.set(id, {
+      label: id,
+      prompt,
+      source: args.mode === "live" ? "model" : "javascript",
+      model: args.mode === "live" ? ANALYST.model : null,
+      reasoningEffort: args.mode === "live" ? ANALYST.reasoningEffort : null,
+      reused: reusedTasks.has(id),
+      result
+    });
+    return result;
   };
   await phase("Observe");
   await task("capture", "Capture synthetic launch", "code", [], () => ({
@@ -401,9 +427,23 @@ async function runLaunchRescue(ctx, emit) {
     evaluation: before
   });
   const needed = [];
-  if ((evidence.find((item) => item.id === "E-RETRY")?.count ?? 0) > 0) needed.push("dedupe");
-  if ((evidence.find((item) => item.id === "E-INVENTORY")?.count ?? 0) > 0) needed.push("capacity");
+  const retryCount = evidence.find((item) => item.id === "E-RETRY")?.count ?? 0;
+  const inventoryGap = evidence.find((item) => item.id === "E-INVENTORY")?.count ?? 0;
+  if (retryCount > 0) needed.push("dedupe");
+  if (inventoryGap > 0) needed.push("capacity");
   if (needed.length === 0) throw new WorkflowError("The selected synthetic incident contains no actionable evidence.");
+  await explain({
+    id: "route",
+    feature: "dynamic",
+    title: "Dynamic Workflow chooses the work",
+    benefit: `Two evidence scans run in parallel. ${retryCount} retries ${retryCount ? "select the retry specialist" : "skip retry work"}; ${inventoryGap} unavailable seats ${inventoryGap ? "select the capacity specialist" : "skip capacity work"}. Evidence replaces a fixed roster.`,
+    code: 'const scans = await ctx.parallel([...]);\nif (retryCount > 0) needed.push("dedupe");\nif (inventoryGap > 0) needed.push("capacity");',
+    input: evidence,
+    output: { parallelEvidenceScans: 2, selectedSpecialists: needed, specialistsRunInParallel: needed.length > 1 },
+    focus: ["scan-retries", "scan-inventory"],
+    handoffs: [],
+    pause: true
+  });
   await phase("Repair");
   for (const repair of needed) {
     await emit({
@@ -438,6 +478,18 @@ async function runLaunchRescue(ctx, emit) {
     () => ({ ...policy }),
     "No generated code is executed"
   );
+  await explain({
+    id: "repair",
+    feature: "agentic",
+    title: "Agentic Workflow explains the repair",
+    benefit: "A specialist interprets a bounded evidence snapshot and gives a cited explanation. The workflow\u2014not the model\u2014chooses the branch.",
+    code: 'const result = await ctx.agent(prompt, {\n  model: "gpt-6.1-sol", reasoningEffort: "max",\n  schema: proposalSchema(repair)\n});',
+    input: proposals.map((proposal) => proposal.evidenceSnapshot),
+    output: proposals,
+    focus: needed.map((repair) => `${repair}-specialist-1`),
+    handoffs: [...handoffs.values()],
+    pause: true
+  });
   await phase("Verify");
   let fixture = initialFixture;
   if (args.scenario === "mixed") {
@@ -488,9 +540,33 @@ async function runLaunchRescue(ctx, emit) {
       reason: "C-CAPACITY failed against the changed inventory. Replan only this branch."
     });
     await phase("Adapt");
+    await explain({
+      id: "adapt",
+      feature: "dynamic",
+      title: "Dynamic Workflow changes the next step",
+      benefit: "The fixed first plan would keep 200 oversold seats. This failed-check branch retains the retry repair and adds capacity work without a new user prompt or a full restart.",
+      code: 'if (!after.checks.every(check => check.passed)) {\n  const repair = await specialist("capacity", evidence, 2, ...);\n  policy.capacity = true;\n}',
+      input: { failedChecks: after.checks.filter((check) => !check.passed), currentInventory: updatedInventory },
+      output: { keep: "dedupe repair", add: "capacity specialist", next: "verify revised candidate" },
+      focus: ["verify-1", "rescan-inventory", "capacity-specialist-2"],
+      handoffs: [],
+      pause: true
+    });
     const repair = await specialist("capacity", evidence, 2, "rescan-inventory");
     proposals.push(repair);
     policy.capacity = true;
+    await explain({
+      id: "repair-2",
+      feature: "agentic",
+      title: "A new agent handles only the new evidence",
+      benefit: "The capacity specialist receives its own observation snapshot. It does not rerun or overwrite the earlier retry analysis.",
+      code: 'await ctx.agent(prompt, {\n  model: "gpt-6.1-sol", reasoningEffort: "max",\n  label: "capacity-specialist-2"\n});',
+      input: repair.evidenceSnapshot,
+      output: repair,
+      focus: ["capacity-specialist-2"],
+      handoffs: [...handoffs.values()].filter((handoff) => handoff.label === "capacity-specialist-2"),
+      pause: false
+    });
     await task(
       "candidate-2",
       "Revise the candidate",
@@ -511,29 +587,62 @@ async function runLaunchRescue(ctx, emit) {
     await emit({ type: "verification", id: "verification-2", title: "The adapted candidate passes", evaluation: after, round: 2 });
   }
   if (!after.checks.every((check) => check.passed)) throw new WorkflowError("Revised candidate failed. Release held.");
+  await explain({
+    id: "verify",
+    feature: "checks",
+    title: "Checks\u2014not agent confidence\u2014decide",
+    benefit: "Executable contracts establish one outcome per attendee, respect current capacity, and account for everyone. A model cannot declare these checks passed.",
+    code: 'after = evaluate(fixture, policy);\nif (!after.checks.every(check => check.passed))\n  throw new WorkflowError("Release held.");',
+    input: { policy, currentRooms: fixture.rooms },
+    output: { checks: after.checks, confirmed: after.uniqueConfirmed, waitlisted: after.waitlisted },
+    focus: [verificationRounds === 2 ? "verify-2" : "verify-1"],
+    handoffs: [],
+    pause: true
+  });
   await phase("Challenge");
   const reviewerDependency = verificationRounds === 2 ? "verify-2" : "verify-1";
+  const reviewPrompt = [
+    "Independently challenge this synthetic local release candidate. Use no tools or delegation.",
+    "Return verdict (accept/reject), rationale, evidenceIds. Cite only supplied evidence IDs.",
+    OUTPUT_CONTRACT,
+    "Reject if any contract check fails or the proposed policy is inconsistent with the evidence.",
+    "Every repair includes its observation round and immutable evidenceSnapshot.",
+    "Judge historical explanations against their own snapshots and the final policy against current evidence.",
+    args.scenario === "mixed" ? "Inventory deliberately changed after round 1. Round 2 corrected that new fact; do not treat a correctly scoped round-1 observation as a contradiction." : "Both the policy and explanations must be consistent with the supplied observations.",
+    "Do not claim production readiness, deployment, performance, or real ticket allocation.",
+    `Current evidence: ${JSON.stringify(evidence)}`,
+    `Repairs: ${JSON.stringify(proposals)}`,
+    `Policy: ${JSON.stringify(policy)}`,
+    `Acceptance checks and measured synthetic counts: ${JSON.stringify(after)}`
+  ].join("\n");
   const verdictValue = await task("reviewer", "Independent challenge", kind, [reviewerDependency], async () => {
     if (args.mode === "rehearsal") return independentLedgerReview(fixture, policy, evidence);
-    const prompt = [
-      "Independently challenge this synthetic local release candidate. Use no tools or delegation.",
-      "Return verdict (accept/reject), rationale, evidenceIds. Cite only supplied evidence IDs.",
-      OUTPUT_CONTRACT,
-      "Reject if any contract check fails or the proposed policy is inconsistent with the evidence.",
-      "Every repair includes its observation round and immutable evidenceSnapshot.",
-      "Judge historical explanations against their own snapshots and the final policy against current evidence.",
-      args.scenario === "mixed" ? "Inventory deliberately changed after round 1. Round 2 corrected that new fact; do not treat a correctly scoped round-1 observation as a contradiction." : "Both the policy and explanations must be consistent with the supplied observations.",
-      "Do not claim production readiness, deployment, performance, or real ticket allocation.",
-      `Current evidence: ${JSON.stringify(evidence)}`,
-      `Repairs: ${JSON.stringify(proposals)}`,
-      `Policy: ${JSON.stringify(policy)}`,
-      `Acceptance checks and measured synthetic counts: ${JSON.stringify(after)}`
-    ].join("\n");
-    const result = await ctx.agent(prompt, { ...REVIEWER, label: "independent-review", schema: VERDICT_SCHEMA });
+    const result = await ctx.agent(reviewPrompt, { ...REVIEWER, label: "independent-review", schema: VERDICT_SCHEMA });
     if (result === null) throw new WorkflowError("Independent reviewer returned no verdict. Candidate held.");
     return validateVerdict(result, evidence);
   }, args.mode === "live" ? "Sonnet 5.5 / high" : "Independent local ledger walk / no LLM");
   const reviewer = validateVerdict(verdictValue, evidence);
+  const reviewHandoff = {
+    label: "independent-review",
+    prompt: reviewPrompt,
+    source: args.mode === "live" ? "model" : "javascript",
+    model: args.mode === "live" ? REVIEWER.model : null,
+    reasoningEffort: args.mode === "live" ? REVIEWER.reasoningEffort : null,
+    reused: reusedTasks.has("reviewer"),
+    result: reviewer
+  };
+  await explain({
+    id: "review",
+    feature: "agentic",
+    title: "Agentic Workflow challenges the answer",
+    benefit: "A separate model checks the explanation against evidence and its observation rounds. A rejection holds the candidate even when numerical checks pass.",
+    code: 'const verdict = await ctx.agent(reviewPrompt, {\n  model: "claude-sonnet-5.5", reasoningEffort: "high",\n  schema: VERDICT_SCHEMA\n});',
+    input: { repairs: proposals, checks: after.checks },
+    output: reviewer,
+    focus: ["reviewer"],
+    handoffs: [reviewHandoff],
+    pause: reviewer.verdict === "accept"
+  });
   if (reviewer.verdict !== "accept") throw new WorkflowError(`Independent reviewer held the candidate: ${reviewer.rationale}`);
   await phase("Approve");
   const report = {
@@ -561,6 +670,18 @@ async function runLaunchRescue(ctx, emit) {
     args.pauseForApproval ? "Pause, inspect, then resume the same run" : "Draft-only run; no approval claimed"
   );
   await emit({ type: "ready", id: "ready", report: structuredClone(report) });
+  await explain({
+    id: "approval",
+    feature: "human",
+    title: "Dynamic Workflow stops for a human",
+    benefit: "A passing candidate is not permission to continue. The durable checkpoint requires an explicit local draft approval in its owning host.",
+    code: 'await ctx.pause("approve-local-draft");',
+    input: { checksPassed: after.checks.length, independentReview: reviewer.verdict },
+    output: { decision: args.pauseForApproval ? "awaiting human approval" : "draft only; no approval requested" },
+    focus: ["approval"],
+    handoffs: [],
+    pause: false
+  });
   ctx.log(`All ${after.checks.length} checks pass. ${after.uniqueConfirmed} confirmed, ${after.waitlisted} waitlisted. Synthetic only.`);
   if (args.pauseForApproval) {
     await ctx.pause(`${VERSION}:approve-local-draft`);
@@ -568,6 +689,18 @@ async function runLaunchRescue(ctx, emit) {
     report.status = "approved";
   }
   await phase("Complete");
+  await explain({
+    id: "complete",
+    feature: "dynamic",
+    title: "Dynamic Workflow reuses saved work",
+    benefit: "Resuming keeps the same run and reuses journaled JSON results. Completed agent work need not run again; unsaved work may repeat.",
+    code: "const result = await ctx.step(versionedKey, producer);",
+    input: { runId: ctx.runId },
+    output: { reusedStepsThisAttempt: reusedTasks.size, status: report.status },
+    focus: ["approval"],
+    handoffs: [],
+    pause: false
+  });
   await emit({ type: "complete", id: "complete", report: structuredClone(report) });
   return report;
 }
@@ -662,6 +795,7 @@ async function reconcileNativeRun(root2, run, options = {}) {
     attempt,
     status: run.status,
     updatedAt,
+    pauseKey: run.status === "paused" && run.pauseInfo?.type === "checkpoint" ? run.pauseInfo.key : null,
     error: run.status === "error" || run.status === "halted" ? run.error ?? run.reason ?? "Native workflow stopped; inspect its run details." : null
   });
 }
@@ -671,7 +805,7 @@ var root = fileURLToPath(new URL("../../../", import.meta.url));
 var ownedRuns = /* @__PURE__ */ new Set();
 var meta = {
   name: "launch-rescue",
-  description: "Rescue a synthetic 2,500-attendee ticket launch. Evidence routes bounded specialists, real checks gate the draft, and a checkpoint enables review/resume. args: scenario (retries/capacity/parallel/mixed), mode (rehearsal/live), seed, pauseForApproval.",
+  description: "Demonstrate Dynamic Workflow orchestration versus agentic reasoning through a synthetic launch rescue. walkthrough true pauses at visible feature proofs; pauseForApproval separately requires human draft approval. args: scenario, mode, seed, walkthrough, pauseForApproval.",
   phases: ["Observe", "Diagnose", "Repair", "Verify", "Adapt", "Challenge", "Approve", "Complete"].map((title) => ({ title })),
   argsSchema: {
     type: "object",
@@ -679,7 +813,8 @@ var meta = {
       scenario: { type: "string", enum: ["retries", "capacity", "parallel", "mixed"] },
       mode: { type: "string", enum: ["rehearsal", "live"] },
       seed: { type: "integer" },
-      pauseForApproval: { type: "boolean" }
+      pauseForApproval: { type: "boolean" },
+      walkthrough: { type: "boolean" }
     }
   },
   limits: { maxConcurrentSubagents: 2, maxTotalSubagents: 6, timeoutSeconds: 480 }

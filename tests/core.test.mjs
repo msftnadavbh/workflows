@@ -48,7 +48,7 @@ test("same seed is reproducible; a different seed changes actual ticket ordering
 test("semantic input validation rejects constraints the SDK schema does not enforce", () => {
   for (const value of [null, [], { seed: 0 }, { seed: 1.5 }, { seed: 10000000 },
     { seed: "42" }, { mode: "pretend-live" }, { scenario: "deploy" }, { pauseForApproval: "yes" },
-    { scenario: "mixed", outputDirectory: "..\\private" }]) {
+    { walkthrough: "yes" }, { scenario: "mixed", outputDirectory: "..\\private" }]) {
     assert.throws(() => validateArgs(value));
   }
 });

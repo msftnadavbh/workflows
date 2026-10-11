@@ -8,10 +8,12 @@ var WorkflowError = class extends Error {
 
 // demo/local-context.ts
 var CheckpointPause = class extends Error {
-  constructor() {
+  constructor(key = "") {
     super("Review checkpoint reached.");
+    this.key = key;
     this.name = "CheckpointPause";
   }
+  key;
 };
 var PresenterPause = class extends Error {
   constructor() {
@@ -119,7 +121,7 @@ var LocalContext = class {
     if (this.journal.checkpoints[key] === true) return;
     this.journal.checkpoints[key] = true;
     this.save(this.journal);
-    throw new CheckpointPause();
+    throw new CheckpointPause(key);
   }
 };
 export {

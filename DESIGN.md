@@ -102,9 +102,9 @@ The recorded ramp includes the shipped 12–24-pixel caption, control, graph, an
 
 ## Layout
 
-The desktop trace has six causal columns: reproduce, collect evidence, route specialists, verify, challenge, approve. Two independent probes occupy parallel rows. In the adaptive scenario, a third row holds re-audit, the new specialist, and the second verification.
+Two definitions anchor the page: Dynamic Workflow orchestration and Agentic Workflow reasoning. A feature-proof panel sits beside the desktop trace and exposes the selected feature, benefit, code excerpt, input, output, and prompt. The trace has six causal columns; the adaptive branch occupies a third row.
 
-At narrower widths, the graph scrolls inside its own accessible region; the page itself does not overflow horizontally. At 680 pixels, outcomes and the gate stack vertically. Stage mode fits controls, the adaptive graph, measured results, and the approval gate within a 1920×1080 viewport.
+At narrower widths, the proof stacks below the trace and the graph scrolls within its own accessible region. Stage mode keeps the teaching continuation visible within 1920×1080 and focuses on the proof during a guided stop. Measured outcomes return for the separate final human review; longer proof content can scroll inside its keyboard-focusable region.
 
 ## Elevation & Depth
 
@@ -120,7 +120,7 @@ Scenario controls show the selected input and lock while a run is active, paused
 
 Graph nodes are keyboard-inspectable, with explicit kind and status. The inspector displays the model/worker distinction and repair evidence provenance. The approval gate treats offline browser approval and native terminal review as separate controls.
 
-A plain-language summary above the trace explains why a branch appeared and what happens next. Check-node inspection shows the measured pass/fail outcomes and preserves keyboard focus. Native setup remains discoverable through **Show run command**; an earlier result must not hide the launch instructions.
+A plain-language summary explains the cause and next step. Guided stops pause execution, not just its animation. The proof distinguishes actual model responses from JavaScript substitutes and native prompt previews. **Continue walkthrough** and native **NEXT** never approve a draft. The separate final approval remains explicit.
 
 ## Do's and Don'ts
 

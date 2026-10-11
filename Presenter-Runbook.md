@@ -6,15 +6,15 @@
 
 “Today this room will choose what breaks. We won't choose the agents first; the evidence will.”
 
-The audience should leave with three distinctions: **autopilot is autonomy, fleet is model-chosen delegation, and a dynamic workflow is a process defined in code.** GitHub Agentic Workflows on Actions is a separate tool.
+Lead with the two visible labels: **Dynamic Workflow = code-controlled orchestration. Agentic Workflow = model reasoning and independent challenge.** Then distinguish autopilot (autonomy), fleet (model-chosen delegation), and the separate GitHub Agentic Workflows engine on Actions.
 
 ## Before the venue session
 
 1. Keep `Launch-Rescue.pptx`, the PDF, and `Launch-Rescue-Demo.html` on the presentation machine. The five appendix slides are hidden during the main slide show.
-2. Open the standalone HTML once. Use a **1920×1080** projector viewport, **Stage view**, **dark theme**, and **Normal** pacing. Test **Run rescue**, **Pause**, resume, and **Approve local draft**. Use **New run** to return to a clean state. Smaller viewports require scrolling.
+2. Open the standalone HTML once. Use a **1920×1080** projector viewport, **Stage view**, **Feature walkthrough**, **dark theme**, and **Normal** pacing. Test the guided stops, **Continue walkthrough**, and the separate final **Approve local draft** action. Use **New run** to return to a clean state. Smaller viewports require scrolling.
 3. If demonstrating real agents, run `npm ci` before the event. Check Copilot authentication, preview eligibility, and model availability. Do not depend on venue Wi-Fi for installation.
 4. Start `node demo\server.mjs` in a dedicated terminal and open `http://127.0.0.1:4173/?scoutTheme=dark`. Keep a second terminal ready for the SDK runner.
-5. Rehearse `node native\Run-Sdk.mjs --rehearsal --pause`. At the checkpoint, type `APPROVE` in that same terminal. This exercises the actual Copilot runtime without paying for model calls.
+5. Rehearse `node native\Run-Sdk.mjs --rehearsal --pause --walkthrough`. Type `NEXT` at teaching checkpoints; type `APPROVE` only at final draft review. This exercises the actual Copilot runtime without paying for model calls.
 6. If credits and connectivity permit, preflight the live path once. Use the exact requested models: **GPT-6.1 Sol / max** and **Sonnet 5.5 / high**. No Auto substitution is configured.
 
 Do not open account details, tokens, environment dumps, or unrelated sessions on the projector. The demo uses only synthetic evidence.
@@ -45,6 +45,19 @@ Use **Both at once** to show independent specialist branches. Use **Surprise me*
 
 ## Live sequence
 
+**Do not narrate only ticket allocation. At every stop, point at the feature name, relevant code, input, output, and why it helps.**
+
+| Guided stop | Point at | Say |
+|---|---|---|
+| Route | **DYNAMIC WORKFLOW**, `ctx.parallel`, and the selected specialist list | “Code controls who runs and when. Evidence selects the branch; we haven't called a model yet.” |
+| Repair | **AGENTIC WORKFLOW**, exact prompt, model/effort, and cited response | “This is the model's job: interpret and explain a bounded repair. It does not invent the workflow program.” |
+| Adapt | **DYNAMIC WORKFLOW**, failed capacity check and added branch | “This existing rule reacts to new evidence. Keep the good work; add only the missing specialist.” |
+| Verify | **DETERMINISTIC CHECKS**, actual measured outcomes | “Code decides whether it worked. A confident agent response cannot pass these tests for us.” |
+| Review | **AGENTIC WORKFLOW**, independent verdict and rationale | “A different model can reject the explanation even when the numerical checks pass.” |
+| Approval / resume | **DYNAMIC WORKFLOW / HUMAN**, separate approval and saved-step count | “NEXT taught the feature; it did not approve anything. Now a human decides. Resume reuses saved results.” |
+
+Offline: click **Continue walkthrough** at each teaching stop. Native: type **NEXT** in the owning SDK terminal. Native-browser controls are read-only. The offline **JS SUBSTITUTE** label is deliberate; never call it an actual agent result.
+
 | Beat | Action | Say |
 |---|---|---|
 | Establish the mode | Point at the mode strip before starting. | “This is [offline rehearsal / native rehearsal / native live]. Here's exactly what executes.” |
@@ -60,7 +73,7 @@ Use **Both at once** to show independent specialist branches. Use **Surprise me*
 
 Keyboard shortcuts for offline rehearsal: **S** run/resume, **P** pause, **V** stage view. They are inactive while editing a field. Presentation pacing deliberately adds delays; do not present it as a latency measurement.
 
-The sentence above the graph states the current cause and next step. Select **Acceptance checks** to show the actual failed capacity count, not just its status. Select **Re-run acceptance checks** to contrast the passing result. In native mode, **Show run command** restores setup instructions if an earlier run is already on screen.
+The sentence above the graph states the current cause and next step. The feature-proof selector revisits executed proofs; the prompt disclosure shows the exact handoff. Select **Acceptance checks** to show the failed capacity count, and **Re-run acceptance checks** to contrast the passing result. In native mode, **Show run command** restores setup instructions.
 
 ## Exact expected outcomes
 
@@ -78,12 +91,12 @@ Why the surprise baseline shows 500, not 200: retries initially produce 3,000 al
 ## The real native command
 
 ```powershell
-node native\Run-Sdk.mjs --live --pause --scenario mixed
+node native\Run-Sdk.mjs --live --pause --walkthrough --scenario mixed
 ```
 
 The runner uses SDK 1.0.19 and its runtime 1.0.95. Its extension launch provider is restricted to this project's exact entrypoint. The two agents have no tools, and the extension verifies their actual resolved models before accepting results.
 
-At the checkpoint, review in the browser, then type **`APPROVE` in the same SDK terminal**. Commands are case-insensitive. A blank line or typo keeps the checkpoint open and asks again; only **`HOLD`** deliberately ends the host without approval. EOF or terminal interruption does not approve the draft. The browser detects a closed SDK host and directs you to start a new run, not to approve in a vanished terminal.
+At teaching checkpoints, read the proof and type **NEXT** in the same SDK terminal. NEXT never approves the draft; APPROVE is not accepted there. At the separate final checkpoint, review the draft and type **APPROVE**. Commands are case-insensitive; typos ask again. Only **HOLD** deliberately closes the host, and interruption never records approval.
 
 For an extension run created inside a local Copilot app/CLI session, use that owning session's **Workflows** panel instead. A separately launched CLI workflow belongs to its own session. Do not assume CLI and SDK sessions are interchangeable.
 
@@ -103,7 +116,7 @@ If asked “what makes this agentic rather than animated?” show the source and
 | Reviewer holds the candidate | Respect the gate. Inspect its rationale; use the offline lesson if time is limited. Never force approval or silently replace the model. |
 | Workflow not found | Check experimental access, the reviewed extension, and SDK dependencies. Use the version-matched SDK runner rather than improvising a client switch. |
 | CLI says unknown `--args` | Check the active version. On this machine, `--no-auto-update` selected an older 1.0.80 runtime. The CLI launcher deliberately omits it. |
-| Native checkpoint seems stuck | The SDK terminal is waiting for your review. Type `APPROVE` there, not in the browser. |
+| Native checkpoint seems stuck | Read the prompt in the owning SDK terminal: use `NEXT` for a teaching stop, `APPROVE` only for final draft review. |
 | Native view says held / host closed | The SDK terminal has ended. Start a new run; a completed draft-only run has no approval gate to resume. |
 | Port 4173 is occupied | Use another port. Do not terminate other users' processes by name. |
 | PowerShell policy blocks the launcher | Use `node demo\server.mjs`; do not weaken system settings. |

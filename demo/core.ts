@@ -5,7 +5,7 @@ import type {
   WorkflowJsonSchema,
 } from "@github/copilot-sdk/extension";
 
-export const VERSION = "launch-rescue-v2";
+export const VERSION = "launch-rescue-v3";
 export const ATTENDEES = 2500;
 export const ANALYST = { model: "gpt-6.1-sol", reasoningEffort: "max", agent: "launch-analyst" };
 export const REVIEWER = { model: "claude-sonnet-5.5", reasoningEffort: "high", agent: "launch-reviewer" };
@@ -17,6 +17,7 @@ export type WorkflowArgs = {
   mode: "rehearsal" | "live";
   seed: number;
   pauseForApproval: boolean;
+  walkthrough: boolean;
 };
 export type Repair = "dedupe" | "capacity";
 export type Policy = { dedupe: boolean; capacity: boolean };
@@ -58,15 +59,39 @@ export type RunReport = {
   note: string;
 };
 export type TaskKind = "code" | "agent" | "worker" | "gate";
+export type FeatureArea = "dynamic" | "agentic" | "checks" | "human";
+export type FeatureHandoff = {
+  label: string;
+  prompt: string;
+  source: "model" | "javascript";
+  model: string | null;
+  reasoningEffort: string | null;
+  reused: boolean;
+  result: JsonValue;
+};
+export type FeatureProof = {
+  type: "feature";
+  id: string;
+  feature: FeatureArea;
+  title: string;
+  benefit: string;
+  code: string;
+  input: JsonValue;
+  output: JsonValue;
+  focus: string[];
+  handoffs: FeatureHandoff[];
+  pause: boolean;
+};
 export type WorkflowEvent =
   | { type: "phase"; id: string; title: string }
-  | { type: "task"; id: string; title: string; kind: TaskKind; state: "running" | "done" | "error"; dependsOn: string[]; detail: string }
+  | { type: "task"; id: string; title: string; kind: TaskKind; state: "running" | "done" | "error"; dependsOn: string[]; detail: string; reused?: boolean }
   | { type: "evidence"; id: string; title: string; evidence: Evidence[]; evaluation: Evaluation }
   | { type: "branch"; id: string; title: string; repair: Repair; reason: string }
   | { type: "verification"; id: string; title: string; evaluation: Evaluation; round: number }
   | { type: "twist"; id: string; title: string; detail: string }
   | { type: "ready"; id: string; report: RunReport }
-  | { type: "complete"; id: string; report: RunReport };
+  | { type: "complete"; id: string; report: RunReport }
+  | FeatureProof;
 export type EventSink = (event: WorkflowEvent) => Promise<void>;
 export type RunContext = Pick<WorkflowContext, "runId" | "args" | "signal" | "phase" | "log" | "step" | "parallel" | "agent" | "pause">;
 
@@ -91,14 +116,15 @@ export function isJsonValue(value: unknown, depth = 0): value is JsonValue {
 
 export function validateArgs(value: unknown): WorkflowArgs {
   if (!isRecord(value)) throw new WorkflowError("Workflow inputs must be a JSON object.");
-  const allowed = new Set(["scenario", "mode", "seed", "pauseForApproval"]);
+  const allowed = new Set(["scenario", "mode", "seed", "pauseForApproval", "walkthrough"]);
   if (Object.keys(value).some((key) => !allowed.has(key))) {
-    throw new WorkflowError("Unknown workflow input. Allowed: scenario, mode, seed, pauseForApproval.");
+    throw new WorkflowError("Unknown workflow input. Allowed: scenario, mode, seed, pauseForApproval, walkthrough.");
   }
   const scenario = value.scenario ?? "mixed";
   const mode = value.mode ?? "rehearsal";
   const seed = value.seed ?? 42;
   const pauseForApproval = value.pauseForApproval ?? true;
+  const walkthrough = value.walkthrough ?? false;
   if (scenario !== "retries" && scenario !== "capacity" && scenario !== "parallel" && scenario !== "mixed") {
     throw new WorkflowError("Choose retries, capacity, parallel, or mixed.");
   }
@@ -107,7 +133,12 @@ export function validateArgs(value: unknown): WorkflowArgs {
     throw new WorkflowError("Seed must be an integer from 1 to 9999999.");
   }
   if (typeof pauseForApproval !== "boolean") throw new WorkflowError("pauseForApproval must be boolean.");
-  return { scenario, mode, seed, pauseForApproval };
+  if (typeof walkthrough !== "boolean") throw new WorkflowError("walkthrough must be boolean.");
+  return { scenario, mode, seed, pauseForApproval, walkthrough };
+}
+
+export function isWalkthroughCheckpoint(key: string | null | undefined): boolean {
+  return typeof key === "string" && key.startsWith(`${VERSION}:walkthrough:`);
 }
 
 export function makeFixture(args: WorkflowArgs, roomChanged = false): Fixture {
@@ -394,6 +425,8 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
   const initialFixture = makeFixture(args);
   const policy: Policy = { dedupe: false, capacity: false };
   const proposals: RepairRecord[] = [];
+  const reusedTasks = new Set<string>();
+  const handoffs = new Map<string, FeatureHandoff>();
   const kind: TaskKind = args.mode === "live" ? "agent" : "worker";
   const phase = async (title: string) => {
     abortIfNeeded(ctx);
@@ -408,7 +441,12 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
     await emit({ type: "task", id, title, kind: taskKind, state: "running", dependsOn, detail });
     let value: JsonValue;
     try {
-      value = await ctx.step(`${VERSION}:${id}`, producer);
+      let produced = false;
+      value = await ctx.step(`${VERSION}:${id}`, () => {
+        produced = true;
+        return producer();
+      });
+      if (!produced) reusedTasks.add(id);
     } catch (error) {
       if (!ctx.signal.aborted) {
         const message = error instanceof Error ? error.message : String(error);
@@ -418,35 +456,49 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
       throw error;
     }
     abortIfNeeded(ctx);
-    await emit({ type: "task", id, title, kind: taskKind, state: "done", dependsOn, detail });
+    await emit({ type: "task", id, title, kind: taskKind, state: "done", dependsOn, detail, reused: reusedTasks.has(id) });
     return value;
+  };
+  const explain = async (proof: Omit<FeatureProof, "type">): Promise<void> => {
+    await emit({ type: "feature", ...structuredClone(proof) });
+    if (args.walkthrough && proof.pause) {
+      await ctx.pause(`${VERSION}:walkthrough:${proof.id}`);
+      abortIfNeeded(ctx);
+    }
   };
   const specialist = async (repair: Repair, evidence: Evidence[], round: 1 | 2, dependency: string): Promise<RepairRecord> => {
     const id = `${repair}-specialist-${round}`;
     const title = repair === "dedupe" ? "Retry specialist" : "Capacity specialist";
     const snapshot = scopedEvidence(repair, evidence);
     const detail = args.mode === "live" ? "GPT-6.1 Sol / max" : "Local JavaScript worker / no LLM";
+    const prompt = [
+      "Analyze this synthetic conference-launch fixture. Use no tools and do not delegate.",
+      `Observation round: ${round}. You see only your specialist's immutable evidence snapshot.`,
+      `Your bounded repair is ${repair}. Return repair, rationale, and evidenceIds.`,
+      repair === "dedupe" ? "Reuse the first decision by ticket ID."
+        : "Use current room inventory and waitlist excess attendees.",
+      "Discuss only your supplied evidence. Do not speculate about other components or claim tests pass.",
+      "Deterministic code verifies the choice. Cite only supplied evidence IDs.",
+      OUTPUT_CONTRACT,
+      `Evidence: ${JSON.stringify(snapshot)}`,
+    ].join("\n");
     const value = await task(id, title, kind, [dependency], async () => {
       if (args.mode === "rehearsal") return {
         ...localProposal(repair, snapshot), round, evidenceSnapshot: snapshot,
       };
-      const prompt = [
-        "Analyze this synthetic conference-launch fixture. Use no tools and do not delegate.",
-        `Observation round: ${round}. You see only your specialist's immutable evidence snapshot.`,
-        `Your bounded repair is ${repair}. Return repair, rationale, and evidenceIds.`,
-        repair === "dedupe" ? "Reuse the first decision by ticket ID."
-          : "Use current room inventory and waitlist excess attendees.",
-        "Discuss only your supplied evidence. Do not speculate about other components or claim tests pass.",
-        "Deterministic code verifies the choice. Cite only supplied evidence IDs.",
-        OUTPUT_CONTRACT,
-        `Evidence: ${JSON.stringify(snapshot)}`,
-      ].join("\n");
       const options: WorkflowAgentOptions = { ...ANALYST, label: id, schema: proposalSchema(repair) };
       const result = await ctx.agent(prompt, options);
       if (result === null) throw new WorkflowError(`${title} returned no usable result. Retry or use the labeled rehearsal.`);
       return { ...validateProposal(result, repair, snapshot), round, evidenceSnapshot: snapshot };
     }, detail);
-    return validateRepairRecord(value, repair, round, snapshot);
+    const result = validateRepairRecord(value, repair, round, snapshot);
+    handoffs.set(id, {
+      label: id, prompt, source: args.mode === "live" ? "model" : "javascript",
+      model: args.mode === "live" ? ANALYST.model : null,
+      reasoningEffort: args.mode === "live" ? ANALYST.reasoningEffort : null,
+      reused: reusedTasks.has(id), result,
+    });
+    return result;
   };
 
   await phase("Observe");
@@ -468,9 +520,18 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
   await emit({ type: "evidence", id: "initial-evidence", title: "Evidence decides who joins",
     evidence: evidence.map((item) => ({ ...item })), evaluation: before });
   const needed: Repair[] = [];
-  if ((evidence.find((item) => item.id === "E-RETRY")?.count ?? 0) > 0) needed.push("dedupe");
-  if ((evidence.find((item) => item.id === "E-INVENTORY")?.count ?? 0) > 0) needed.push("capacity");
+  const retryCount = evidence.find((item) => item.id === "E-RETRY")?.count ?? 0;
+  const inventoryGap = evidence.find((item) => item.id === "E-INVENTORY")?.count ?? 0;
+  if (retryCount > 0) needed.push("dedupe");
+  if (inventoryGap > 0) needed.push("capacity");
   if (needed.length === 0) throw new WorkflowError("The selected synthetic incident contains no actionable evidence.");
+  await explain({
+    id: "route", feature: "dynamic", title: "Dynamic Workflow chooses the work",
+    benefit: `Two evidence scans run in parallel. ${retryCount} retries ${retryCount ? "select the retry specialist" : "skip retry work"}; ${inventoryGap} unavailable seats ${inventoryGap ? "select the capacity specialist" : "skip capacity work"}. Evidence replaces a fixed roster.`,
+    code: 'const scans = await ctx.parallel([...]);\nif (retryCount > 0) needed.push("dedupe");\nif (inventoryGap > 0) needed.push("capacity");',
+    input: evidence, output: { parallelEvidenceScans: 2, selectedSpecialists: needed, specialistsRunInParallel: needed.length > 1 },
+    focus: ["scan-retries", "scan-inventory"], handoffs: [], pause: true,
+  });
 
   await phase("Repair");
   for (const repair of needed) {
@@ -491,6 +552,14 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
   });
   await task("candidate-1", "Assemble bounded repair", "code",
     needed.map((repair) => `${repair}-specialist-1`), () => ({ ...policy }), "No generated code is executed");
+  await explain({
+    id: "repair", feature: "agentic", title: "Agentic Workflow explains the repair",
+    benefit: "A specialist interprets a bounded evidence snapshot and gives a cited explanation. The workflow—not the model—chooses the branch.",
+    code: 'const result = await ctx.agent(prompt, {\n  model: "gpt-6.1-sol", reasoningEffort: "max",\n  schema: proposalSchema(repair)\n});',
+    input: proposals.map((proposal) => proposal.evidenceSnapshot),
+    output: proposals, focus: needed.map((repair) => `${repair}-specialist-1`),
+    handoffs: [...handoffs.values()], pause: true,
+  });
 
   await phase("Verify");
   let fixture = initialFixture;
@@ -518,9 +587,25 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
     await emit({ type: "branch", id: "branch:capacity:2", title: "Failed check adds a new specialist",
       repair: "capacity", reason: "C-CAPACITY failed against the changed inventory. Replan only this branch." });
     await phase("Adapt");
+    await explain({
+      id: "adapt", feature: "dynamic", title: "Dynamic Workflow changes the next step",
+      benefit: "The fixed first plan would keep 200 oversold seats. This failed-check branch retains the retry repair and adds capacity work without a new user prompt or a full restart.",
+      code: 'if (!after.checks.every(check => check.passed)) {\n  const repair = await specialist("capacity", evidence, 2, ...);\n  policy.capacity = true;\n}',
+      input: { failedChecks: after.checks.filter((check) => !check.passed), currentInventory: updatedInventory },
+      output: { keep: "dedupe repair", add: "capacity specialist", next: "verify revised candidate" },
+      focus: ["verify-1", "rescan-inventory", "capacity-specialist-2"], handoffs: [], pause: true,
+    });
     const repair = await specialist("capacity", evidence, 2, "rescan-inventory");
     proposals.push(repair);
     policy.capacity = true;
+    await explain({
+      id: "repair-2", feature: "agentic", title: "A new agent handles only the new evidence",
+      benefit: "The capacity specialist receives its own observation snapshot. It does not rerun or overwrite the earlier retry analysis.",
+      code: 'await ctx.agent(prompt, {\n  model: "gpt-6.1-sol", reasoningEffort: "max",\n  label: "capacity-specialist-2"\n});',
+      input: repair.evidenceSnapshot, output: repair, focus: ["capacity-specialist-2"],
+      handoffs: [...handoffs.values()].filter((handoff) => handoff.label === "capacity-specialist-2"),
+      pause: false,
+    });
     await task("candidate-2", "Revise the candidate", "code", ["capacity-specialist-2"],
       () => ({ ...policy }), "Keep the verified retry repair; add current-inventory allocation");
     await phase("Verify");
@@ -530,12 +615,18 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
     await emit({ type: "verification", id: "verification-2", title: "The adapted candidate passes", evaluation: after, round: 2 });
   }
   if (!after.checks.every((check) => check.passed)) throw new WorkflowError("Revised candidate failed. Release held.");
+  await explain({
+    id: "verify", feature: "checks", title: "Checks—not agent confidence—decide",
+    benefit: "Executable contracts establish one outcome per attendee, respect current capacity, and account for everyone. A model cannot declare these checks passed.",
+    code: 'after = evaluate(fixture, policy);\nif (!after.checks.every(check => check.passed))\n  throw new WorkflowError("Release held.");',
+    input: { policy, currentRooms: fixture.rooms },
+    output: { checks: after.checks, confirmed: after.uniqueConfirmed, waitlisted: after.waitlisted },
+    focus: [verificationRounds === 2 ? "verify-2" : "verify-1"], handoffs: [], pause: true,
+  });
 
   await phase("Challenge");
   const reviewerDependency = verificationRounds === 2 ? "verify-2" : "verify-1";
-  const verdictValue = await task("reviewer", "Independent challenge", kind, [reviewerDependency], async () => {
-    if (args.mode === "rehearsal") return independentLedgerReview(fixture, policy, evidence);
-    const prompt = [
+  const reviewPrompt = [
       "Independently challenge this synthetic local release candidate. Use no tools or delegation.",
       "Return verdict (accept/reject), rationale, evidenceIds. Cite only supplied evidence IDs.",
       OUTPUT_CONTRACT,
@@ -550,12 +641,27 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
       `Repairs: ${JSON.stringify(proposals)}`,
       `Policy: ${JSON.stringify(policy)}`,
       `Acceptance checks and measured synthetic counts: ${JSON.stringify(after)}`,
-    ].join("\n");
-    const result = await ctx.agent(prompt, { ...REVIEWER, label: "independent-review", schema: VERDICT_SCHEMA });
+  ].join("\n");
+  const verdictValue = await task("reviewer", "Independent challenge", kind, [reviewerDependency], async () => {
+    if (args.mode === "rehearsal") return independentLedgerReview(fixture, policy, evidence);
+    const result = await ctx.agent(reviewPrompt, { ...REVIEWER, label: "independent-review", schema: VERDICT_SCHEMA });
     if (result === null) throw new WorkflowError("Independent reviewer returned no verdict. Candidate held.");
     return validateVerdict(result, evidence);
   }, args.mode === "live" ? "Sonnet 5.5 / high" : "Independent local ledger walk / no LLM");
   const reviewer = validateVerdict(verdictValue, evidence);
+  const reviewHandoff: FeatureHandoff = {
+    label: "independent-review", prompt: reviewPrompt, source: args.mode === "live" ? "model" : "javascript",
+    model: args.mode === "live" ? REVIEWER.model : null,
+    reasoningEffort: args.mode === "live" ? REVIEWER.reasoningEffort : null,
+    reused: reusedTasks.has("reviewer"), result: reviewer,
+  };
+  await explain({
+    id: "review", feature: "agentic", title: "Agentic Workflow challenges the answer",
+    benefit: "A separate model checks the explanation against evidence and its observation rounds. A rejection holds the candidate even when numerical checks pass.",
+    code: 'const verdict = await ctx.agent(reviewPrompt, {\n  model: "claude-sonnet-5.5", reasoningEffort: "high",\n  schema: VERDICT_SCHEMA\n});',
+    input: { repairs: proposals, checks: after.checks }, output: reviewer,
+    focus: ["reviewer"], handoffs: [reviewHandoff], pause: reviewer.verdict === "accept",
+  });
   if (reviewer.verdict !== "accept") throw new WorkflowError(`Independent reviewer held the candidate: ${reviewer.rationale}`);
 
   await phase("Approve");
@@ -569,6 +675,14 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
     () => ({ decision: "review-ready", checksPassed: after.checks.length }),
     args.pauseForApproval ? "Pause, inspect, then resume the same run" : "Draft-only run; no approval claimed");
   await emit({ type: "ready", id: "ready", report: structuredClone(report) });
+  await explain({
+    id: "approval", feature: "human", title: "Dynamic Workflow stops for a human",
+    benefit: "A passing candidate is not permission to continue. The durable checkpoint requires an explicit local draft approval in its owning host.",
+    code: 'await ctx.pause("approve-local-draft");',
+    input: { checksPassed: after.checks.length, independentReview: reviewer.verdict },
+    output: { decision: args.pauseForApproval ? "awaiting human approval" : "draft only; no approval requested" },
+    focus: ["approval"], handoffs: [], pause: false,
+  });
   ctx.log(`All ${after.checks.length} checks pass. ${after.uniqueConfirmed} confirmed, ${after.waitlisted} waitlisted. Synthetic only.`);
   if (args.pauseForApproval) {
     await ctx.pause(`${VERSION}:approve-local-draft`);
@@ -576,6 +690,13 @@ export async function runLaunchRescue(ctx: RunContext, emit: EventSink): Promise
     report.status = "approved";
   }
   await phase("Complete");
+  await explain({
+    id: "complete", feature: "dynamic", title: "Dynamic Workflow reuses saved work",
+    benefit: "Resuming keeps the same run and reuses journaled JSON results. Completed agent work need not run again; unsaved work may repeat.",
+    code: 'const result = await ctx.step(versionedKey, producer);',
+    input: { runId: ctx.runId }, output: { reusedStepsThisAttempt: reusedTasks.size, status: report.status },
+    focus: ["approval"], handoffs: [], pause: false,
+  });
   await emit({ type: "complete", id: "complete", report: structuredClone(report) });
   return report;
 }

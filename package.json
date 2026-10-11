@@ -11,7 +11,7 @@
     "test": "npm run build && node --test tests\\core.test.mjs tests\\workflow.test.mjs tests\\server.test.mjs tests\\native-io.test.mjs tests\\checkpoint.test.mjs && python tests\\package-stage.test.py",
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test",
-    "test:native-e2e": "node scripts\\rehearse-native.mjs --live",
+    "test:native-e2e": "node scripts\\rehearse-native.mjs --live --walkthrough",
     "deck": "node presentation/build-deck.mjs",
     "verify:deck": "python scripts/verify-pptx.py Launch-Rescue.pptx",
     "package:stage": "python scripts\\package-stage.py",

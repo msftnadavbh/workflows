@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-11T05:03:50.243Z",
+  "verifiedAt": "2026-10-11T06:22:22.433Z",
   "engine": "actual Copilot dynamic-workflow runtime",
   "sdkRuntime": {
     "version": "1.0.95",
@@ -9,25 +9,25 @@
   "nativeBuild": {
     "algorithm": "sha256",
     "files": {
-      "demo\\core.ts": "e5298283be7ef23da79ac0a3bde58b039e3626866a5de637f3d1aa1fb362f0e1",
-      "native\\extension.ts": "297c69613a6e8b0a22b0ba7b04cce135b5df680b5663edd1d0f1f529a4d95205",
+      "demo\\core.ts": "5bb9bae8831c8570ce2b78ed13cec9beeb7e90d03c41910b161c287414c87fb8",
+      "native\\extension.ts": "9cc941d34ecdf0df115f50b86f7b36e589180297e712115ba7009d77b9ba1006",
       "native\\io.ts": "6b6c8828c76d053331f24e298a23d0a7abc86bbcfc7c1f47f95ddb5a56d04bef",
-      "native\\reconcile.ts": "172d5725a3e721b822106a85b3953c8d2316581a30175e2d0cc03f54091228c7",
-      "native\\checkpoint.mjs": "bfa26455531ad4c69a67ae72ba0bde43650b51c060be8d2124b4cf40266b4231",
-      "native\\Run-Sdk.mjs": "46519a930fc8f65d07964524d0eb16c37ca704b622719823f2967d6023ce7407",
+      "native\\reconcile.ts": "78f109a8494319bfc6fb5ac029286b26429f284887d8bafc45f73f0945b73a01",
+      "native\\checkpoint.mjs": "1b8dce3263692d4a2b178e33dd103091741dcf00884b99d3d977995943d484d1",
+      "native\\Run-Sdk.mjs": "52bccb53916105058676df8ad94e93bd8adeb146824b679337b892450c6028e9",
       "native\\verification.mjs": "72cd6ab8c2bd8903958ebcb99bd3a17ea316ebb49a6b2a8c82f672b693184b2b",
       ".github\\agents\\launch-analyst.agent.md": "dfc435d82a4507905d235489f8d37bb92e9ca04924279a0079c0e63d8d45534b",
       ".github\\agents\\launch-reviewer.agent.md": "f39bc99f78942cbeb24a980af46f289d1869446ce6ad8918741b24eb41519f71",
-      ".github\\extensions\\launch-rescue\\extension.mjs": "a95c14b56811d87c58385fd2dbefa68fdc7efdf654ca800213f43f9b081f07e1",
-      "dist\\core.mjs": "01467aa2754f8cb75c08a59602ac8b2229c73501384a2a5c837fbdbf09e153b5",
+      ".github\\extensions\\launch-rescue\\extension.mjs": "1af90a07b60cdfecb092561a80c7e59bd1d30732c52b3731d1836c838e03a6c8",
+      "dist\\core.mjs": "a99c5081b71e887b2c69328e31fe508ed40c6bfabed639a25e44b2012e66275b",
       "dist\\io.mjs": "f90424dcd848d57fe356779dd457b04f0eb9f3b6bcc463f596a9223e9984d2e4",
-      "dist\\reconcile.mjs": "6bf8ab46a0b87832b735828f9174d60f2bfc1404d53d7248259950a8b52ff32c"
+      "dist\\reconcile.mjs": "22fae12db007cae5ccf736c0d537b6bcf062a69dbcd94abc60726f6d9087a71c"
     }
   },
   "pausedStatus": "paused",
   "resumedStatus": "completed",
   "reportStatus": "approved",
-  "runId": "42ed8b24-62a3-4722-9879-34ac5136d088",
+  "runId": "673a9ac3-0c8a-48b7-9a0d-42945d14afc2",
   "workflowOwnedAgents": 0,
   "verificationRounds": 2,
   "verifiedCounts": {

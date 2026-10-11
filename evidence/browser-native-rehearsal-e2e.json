@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-11T06:28:37.716Z",
+  "verifiedAt": "2026-10-11T07:03:06.081Z",
   "mode": "rehearsal",
   "nativeBuild": {
     "algorithm": "sha256",
@@ -25,12 +25,12 @@
   },
   "browserArtifact": {
     "file": "Launch-Rescue-Demo.html",
-    "sha256": "3f7e9eaa47c3d778340a6a68dcf0fcc8e7e57082a0cfd10f82d44cbbefbe8940"
+    "sha256": "56ac921a1e78b36fbe7267a1e383ade1b92c7040876bdaabf8b91d6c7b2faaaf"
   },
   "realBrowser": "Microsoft Edge",
   "viewport": "1920x1080",
   "scenario": "mixed",
-  "runId": "5d5ade72-51c7-4764-9820-2f0e18f67761",
+  "runId": "77a3d404-bdfd-4fff-b6f1-4301a4466bdb",
   "checkpointStatus": "paused",
   "finalStatus": "completed",
   "browserExportedCurrentRun": true,

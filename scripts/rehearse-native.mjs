@@ -32,12 +32,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
-  await page.goto(`http://127.0.0.1:${address.port}/?scoutTheme=dark`);
-  await page.getByRole("button", { name: "Stage view", exact: true }).click();
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
-  await page.getByRole("button", { name: "Show run command", exact: true }).click();
-  await expect(page.locator("#native-panel")).toBeVisible();
-  await page.getByRole("button", { name: "Hide run command", exact: true }).click();
+  await page.goto(`http://127.0.0.1:${address.port}/?scoutTheme=dark&execution=copilot`);
 
   await withNativeSession(async ({ client, session, runtime }) => {
     if (mode === "live") {
@@ -54,10 +49,10 @@ try {
     while (paused.status === "paused" && paused.pauseInfo?.type === "checkpoint" && isWalkthroughCheckpoint(paused.pauseInfo.key)) {
       await reconcileNativeRun(root, paused);
       const featureId = paused.pauseInfo.key.split(":").at(-1);
-      await expect(page.locator("#status-label")).toHaveText("Feature walkthrough paused");
+      await expect(page.locator("#status-label")).toHaveText("Checkpoint");
       await expect(page.locator("#proof-step")).toHaveValue(featureId);
-      await expect(page.locator("#proof-pause")).toContainText("NEXT");
-      await expect(page.getByRole("button", { name: "Continue walkthrough", exact: true })).toBeHidden();
+      await expect(page.locator("#proof-pause")).toHaveText("CHECKPOINT");
+      await expect(page.getByRole("button", { name: "Continue", exact: true })).toBeHidden();
       await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
       const observation = await session.workflow.getRunDetail(paused.runId);
       featureStops.push({ featureId, agents: observation.agents.length });
@@ -68,17 +63,21 @@ try {
         assert.equal(observation.agents.length, 0, "Code selects the branch before agents are launched.");
       }
       if (featureId === "repair" || featureId === "review") {
-        await expect(page.locator("#proof-feature")).toHaveText("AGENTIC WORKFLOW");
-        await expect(page.locator("#proof-code")).toContainText("ctx.agent");
+        await expect(page.locator("#proof-feature")).toHaveText(mode === "live" ? "AGENTIC WORKFLOW"
+          : featureId === "review" ? "CODE / REVIEW" : "CODE / REPAIR");
+        if (mode === "live") await expect(page.locator("#proof-code")).toContainText("ctx.agent");
+        else await expect(page.locator("#proof-code")).not.toContainText("ctx.agent");
         await expect(page.locator("#proof-output")).toContainText("rationale");
-        await expect(page.locator("#proof-execution")).toContainText(mode === "live" ? "Copilot model result" : "No agent or LLM");
+        await expect(page.locator("#proof-execution")).toContainText(mode === "live" ? "Copilot model" : "JavaScript");
         const state = await readNativeState(root, paused.runId);
         const proof = state.events.find((event) => event.type === "feature" && event.id === featureId);
         assert.ok(proof?.handoffs.length);
-        await page.locator("#proof-prompt-label").click();
-        assert.ok((await page.locator("#proof-prompt").textContent()).includes(proof.handoffs[0].prompt),
-          "The browser must show the exact prompt supplied to this model handoff.");
-        await page.locator("#proof-prompt-label").click();
+        if (mode === "live") {
+          await page.locator("#proof-prompt-label").click();
+          assert.ok((await page.locator("#proof-prompt").textContent()).includes(proof.handoffs[0].prompt),
+            "The browser must show the exact prompt supplied to this model handoff.");
+          await page.locator("#proof-prompt-label").click();
+        } else await expect(page.locator("#proof-prompt-details")).toBeHidden();
         await page.locator("#proof-body").evaluate((element) => { element.scrollTop = 0; });
       }
       if (featureId === "adapt") {
@@ -121,7 +120,7 @@ try {
     await expect(page.locator('[data-task="verify-1"]')).toHaveAttribute("data-state", "failed");
     await expect(page.locator('[data-task="verify-2"]')).toHaveAttribute("data-state", "passed");
     await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
-    await expect(page.locator("#approval-detail")).toContainText("running SDK terminal");
+    await expect(page.locator("#approval-detail")).toContainText("approval from the workflow owner");
     await page.locator('[data-task="verify-1"]').click();
     await expect(page.locator("#inspector-detail")).toContainText("200 seats over capacity");
     await expect(page.locator("#inspector-detail")).toContainText("0 duplicate outcomes");
@@ -172,7 +171,7 @@ try {
     }
     await expect(page.locator("#status-label")).toHaveText("Draft approved");
     await expect(page.locator("#proof-step")).toHaveValue("complete");
-    await expect(page.locator("#mode-label")).toContainText("COMPLETED");
+    await expect(page.locator("#proof-pause")).toHaveText("COMPLETED");
     await expect(page.locator("#duplicate-count")).toHaveText("0");
     await expect(page.locator("#oversold-count")).toHaveText("0");
     assert.equal((await readNativeState(root, paused.runId)).status, "completed");

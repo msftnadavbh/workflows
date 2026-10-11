@@ -2,8 +2,8 @@
 <!--
 THESIS: Make Dynamic Workflow orchestration and Agentic Workflow reasoning visibly different, with actual inputs, code excerpts, and outputs.
 OWN-WORLD: Clawpilot charcoal and warm paper, rose switches, Segoe UI, flat trace lanes, explicit status words.
-STORY: Advance a guided feature walkthrough, see code route an agent, inspect its response, watch a failed check change the plan, then approve a local draft.
-FIRST VIEWPORT: Two explicit feature definitions, audience-choice controls, a causal graph beside its feature proof, measured outcomes and a separate human gate.
+STORY: Run the launch workflow, inspect each decision, watch new evidence change the plan, then approve a local draft.
+FIRST VIEWPORT: Two explicit feature definitions, scenario controls, a causal graph beside its execution details, measured outcomes and a separate human gate.
 FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph carries the work; phase tools change around it.
 -->
 <html lang="en">
@@ -86,25 +86,19 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     .quiet { background: none; border-color: var(--cp-border); }
     a { color: var(--cp-link); text-underline-offset: 3px; }
     code, pre, .mono { font-family: Consolas, "Courier New", Courier, monospace; }
-    .shell { max-width: 1880px; margin: auto; padding: 24px 40px 36px; }
+    .shell { max-width: 1880px; margin: auto; padding: 20px 32px 16px; }
     .topbar { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
     .brand { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
     .brand svg { width: 32px; height: 32px; stroke: var(--cp-accent); fill: none; stroke-width: 2.5; }
     .top-actions { display: flex; align-items: center; gap: 8px; }
     .top-actions button { font-size: 14px; padding: 8px 14px; }
-    .intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; padding: 26px 0 28px; }
-    h1 { font-size: clamp(40px, 4.5vw, 78px); line-height: 1.04; letter-spacing: -.035em; margin: 0; font-weight: 750; text-wrap: balance; }
-    .intro p { margin: 14px 0 0; max-width: 68ch; font-size: 20px; line-height: 1.5; color: var(--cp-text-soft); }
-    .mode-control { display: flex; border: 1px solid var(--cp-border-strong); border-radius: .625rem; padding: 4px; gap: 4px; flex-shrink: 0; }
-    .mode-control button { background: none; border-color: var(--cp-bg); font-size: 15px; white-space: nowrap; }
-    .mode-control button[aria-pressed="true"] { background: var(--cp-accent); border-color: var(--cp-accent); color: var(--cp-accent-fg); }
-    .truth-strip { display: flex; justify-content: space-between; gap: 20px; padding: 12px 16px; border: 1px solid var(--cp-border); border-radius: .625rem; background: var(--cp-bg-elevated); font-size: 15px; line-height: 1.5; }
-    .truth-strip strong { color: var(--cp-accent); }
-    .truth-strip span:last-child { color: var(--cp-text-soft); }
-    .feature-definitions { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 16px 0; border-bottom: 1px solid var(--cp-border); }
-    .feature-definitions h2 { font-size: 24px; }
+    .intro { padding: 20px 0 16px; }
+    h1 { font-size: clamp(36px, 3.4vw, 48px); line-height: 1.08; letter-spacing: -.035em; margin: 0; font-weight: 750; text-wrap: balance; }
+    .intro p { margin: 8px 0 0; max-width: 68ch; font-size: 18px; line-height: 1.5; color: var(--cp-text-soft); }
+    .feature-definitions { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 12px 0 16px; border-bottom: 1px solid var(--cp-border); }
+    .feature-definitions h2 { font-size: 22px; }
     .feature-definitions p { margin: 6px 0 0; font-size: 16px; line-height: 1.5; color: var(--cp-text-soft); }
-    .feature-definitions strong { color: var(--cp-accent); font-size: 14px; display: block; margin-top: 4px; }
+    #observed-scenario { margin: 16px 0 0; font-size: 16px; color: var(--cp-text-soft); }
     .feature-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(400px, 1fr); gap: 24px; align-items: start; }
     .feature-layout > section, #feature-proof, .proof-data > section { min-width: 0; }
     #feature-proof { margin-top: 20px; padding: 20px; border: 1px solid var(--cp-border-strong); border-radius: 16px; background: var(--cp-surface); }
@@ -128,10 +122,10 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     #proof-prompt-details { padding: 8px 0; }
     #proof-prompt-details summary { font-size: 14px; }
     #proof-prompt { max-height: 240px; }
-    #proof-control-note { font-size: 14px; line-height: 1.5; color: var(--cp-text-soft); margin: 8px 0; }
-    #continue-walkthrough { width: 100%; font-size: 18px; }
+    #continue-walkthrough { width: 100%; font-size: 18px; margin-top: 12px; }
     .proof-code-label { font-size: 14px; color: var(--cp-text-soft); }
-    .runbar { display: flex; align-items: center; gap: 24px; padding: 22px 0; border-bottom: 1px solid var(--cp-border); }
+    .runbar { display: flex; align-items: center; gap: 24px; padding: 16px 0; border-bottom: 1px solid var(--cp-border); }
+    #selected-challenge { flex: 1; font-size: 17px; font-weight: 600; }
     fieldset { margin: 0; border: 0; padding: 0; min-width: 0; flex: 1; }
     legend { font-size: 16px; font-weight: 650; margin-bottom: 10px; }
     .choices { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -139,7 +133,6 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     .scenario-choice[aria-pressed="true"] { border-color: var(--cp-accent); background: var(--cp-accent-soft); color: var(--cp-accent); }
     .transport { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
     #run-button { font-size: 19px; min-width: 164px; min-height: 50px; }
-    .pace { display: grid; gap: 4px; font-size: 13px; color: var(--cp-text-soft); }
     select, input { background: var(--cp-surface); border: 1px solid var(--cp-border-strong); border-radius: .625rem; color: var(--cp-text); padding: 8px 10px; }
     .graph-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 0 14px; }
     h2 { margin: 0; font-size: 23px; letter-spacing: -.02em; font-weight: 650; }
@@ -149,7 +142,7 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     .state-label[data-state="running"]::before { background: var(--cp-accent); }
     .state-label[data-state="completed"]::before { background: var(--cp-success); }
     .state-label[data-state="error"]::before { background: var(--cp-danger); }
-    .state-label[data-state="awaiting-approval"]::before, .state-label[data-state="paused"]::before { background: var(--cp-warning); }
+    .state-label[data-state="awaiting-approval"]::before, .state-label[data-state="paused"]::before, .state-label[data-state="walkthrough"]::before { background: var(--cp-warning); }
     #phase-label { color: var(--cp-text-soft); }
     #flow-summary { margin: 0 0 14px; font-size: 19px; line-height: 1.5; color: var(--cp-text-soft); max-width: 90ch; }
     .graph-wrap { border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-bg-elevated); overflow: auto; }
@@ -201,79 +194,45 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     #approval-panel { margin-top: 18px; padding: 20px; border: 1px solid var(--cp-accent); border-radius: 16px; background: var(--cp-accent-soft); }
     #approval-panel p { font-size: 16px; line-height: 1.5; margin: 8px 0 16px; color: var(--cp-text-soft); }
     .approval-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    #native-panel { padding: 20px; margin: 20px 0 0; border: 1px solid var(--cp-border-strong); border-radius: 16px; background: var(--cp-surface); }
-    #native-panel h2 { font-size: 22px; }
-    #native-panel p { font-size: 16px; line-height: 1.6; max-width: 88ch; }
-    .command-row { display: flex; align-items: center; gap: 12px; }
-    .command-row code { padding: 12px 14px; border: 1px solid var(--cp-border); border-radius: .625rem; background: var(--cp-surface-soft); font-size: 15px; overflow-wrap: anywhere; flex: 1; }
-    .native-facts { display: flex; gap: 24px; flex-wrap: wrap; font-size: 14px; color: var(--cp-text-soft); margin-top: 16px; }
     #notice { margin-top: 18px; padding: 16px 20px; border: 1px solid var(--cp-danger); border-radius: .625rem; background: var(--cp-surface); color: var(--cp-text); line-height: 1.5; }
     #task-inspector { border: 1px solid var(--cp-border); border-radius: .625rem; padding: 18px 20px; margin-top: 20px; background: var(--cp-surface); }
     #task-inspector p { margin: 8px 0 0; font-size: 16px; line-height: 1.6; color: var(--cp-text-soft); white-space: pre-line; }
     #task-inspector button { float: right; padding: 6px 12px; min-height: 36px; }
-    #presenter-cue { margin-top: 18px; border: 1px solid var(--cp-border); border-radius: .625rem; padding: 16px; }
-    #presenter-cue p { margin: 8px 0 0; font-size: 19px; line-height: 1.5; }
-    .details-row { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
     details { border-top: 1px solid var(--cp-border); padding: 16px 0; }
     summary { font-size: 16px; cursor: pointer; font-weight: 600; padding: 4px 0; }
     details p, details li { line-height: 1.6; color: var(--cp-text-soft); font-size: 15px; }
-    details ol { padding-left: 22px; }
     pre { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: .625rem; font-size: 13px; line-height: 1.6; padding: 18px; max-height: 480px; overflow: auto; }
-    .seed-control { display: flex; align-items: center; gap: 12px; margin-top: 16px; font-size: 15px; }
-    .seed-control input { width: 140px; }
-    footer { display: flex; justify-content: space-between; gap: 24px; padding-top: 20px; margin-top: 8px; border-top: 1px solid var(--cp-border); font-size: 13px; line-height: 1.6; color: var(--cp-text-soft); }
-    footer a { color: var(--cp-text-soft); }
-    html[data-stage="true"] .shell { max-width: none; padding: 16px 28px 12px; }
-    html[data-stage="true"] .intro { padding: 18px 0; }
-    html[data-stage="true"] h1 { font-size: 54px; }
-    html[data-stage="true"] .intro p { display: none; }
-    html[data-stage="true"] .details-row, html[data-stage="true"] footer { display: none; }
-    html[data-stage="true"] .truth-strip { font-size: 16px; }
-    html[data-stage="true"] .runbar { padding: 16px 0; }
-    html[data-stage="true"] .results { padding-top: 16px; }
     @media (min-width: 1101px) {
-      html[data-stage="true"] .intro { position: absolute; top: 16px; right: 520px; padding: 0; }
-      html[data-stage="true"] .intro > div:first-child { display: none; }
-      html[data-stage="true"] .truth-strip { margin-top: 12px; padding: 8px 16px; }
-      html[data-stage="true"] .runbar { padding: 12px 0; }
-      html[data-stage="true"] .graph-header { padding: 12px 0 8px; }
-      html[data-stage="true"] .graph-foot { display: none; }
-      html[data-stage="true"] #twist-banner { padding: 10px 16px; margin-top: 10px; }
-      html[data-stage="true"] #twist-banner p { display: none; }
-      html[data-stage="true"] #evidence-feed { display: none; }
-      html[data-stage="true"] .result-heading { margin-bottom: 8px; }
-      html[data-stage="true"] .check { padding: 7px 0; }
-      html[data-stage="true"] .check-name { font-size: 18px; }
-      html[data-stage="true"] .check-detail { display: none; }
-      html[data-stage="true"] .outcome .comparison { font-size: 16px; }
-      html[data-stage="true"] .pace { font-size: 16px; }
-      html[data-stage="true"] .run-state { font-size: 18px; }
-      html[data-stage="true"] .outcomes { padding-bottom: 12px; }
-      html[data-stage="true"] #approval-panel { padding: 0; margin-top: 12px; border: 0; background: none; }
-      html[data-stage="true"] #approval-panel h2, html[data-stage="true"] #approval-panel p { display: none; }
-      html[data-stage="true"][data-native-connected="true"]:not([data-native-setup="true"]) #native-panel { display: none; }
-      html[data-stage="true"] #flow-summary { margin-bottom: 6px; font-size: 18px; }
-      html[data-stage="true"] .feature-definitions { padding: 8px 0; }
-      html[data-stage="true"] .feature-definitions p { font-size: 15px; }
-      html[data-stage="true"] .feature-definitions strong { font-size: 13px; display: inline; margin-left: 8px; }
-      html[data-stage="true"] #feature-proof { margin-top: 12px; padding: 16px; }
-      html[data-stage="true"] .proof-body { max-height: 230px; }
-      html[data-stage="true"][data-run-status="walkthrough"] .proof-body { max-height: 330px; }
-      html[data-stage="true"] #proof-benefit { font-size: 15px; }
-      html[data-stage="true"] #proof-title { font-size: 22px; }
-      html[data-stage="true"] #proof-output, html[data-stage="true"] #proof-input { max-height: 110px; }
-      html[data-stage="true"] #proof-step { margin-top: 6px; }
-      html[data-stage="true"] .check { padding: 5px 0; }
-      html[data-stage="true"] .checks { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-      html[data-stage="true"] .check { flex-direction: column; align-items: flex-start; gap: 4px; }
-      html[data-stage="true"][data-run-status="walkthrough"] .results { display: none; }
-      html[data-stage="true"][data-run-status="awaiting-approval"] #proof-control-note,
-      html[data-stage="true"][data-run-status="completed"] #proof-control-note { display: none; }
+      .graph-header { padding: 12px 0 8px; }
+      .graph-foot { display: none; }
+      #twist-banner { padding: 10px 16px; margin-top: 10px; }
+      #twist-banner p { display: none; }
+      #evidence-feed { display: none; }
+      .results { padding-top: 16px; }
+      .result-heading { margin-bottom: 8px; }
+      .check-name { font-size: 18px; }
+      .check-detail { display: none; }
+      .outcome .comparison { font-size: 16px; }
+      .run-state { font-size: 18px; }
+      .outcomes { padding-bottom: 12px; }
+      #approval-panel { padding: 0; margin-top: 12px; border: 0; background: none; }
+      #approval-panel h2 { display: none; }
+      #approval-panel p { margin: 8px 0 12px; }
+      #flow-summary { margin-bottom: 6px; font-size: 18px; }
+      #feature-proof { margin-top: 12px; padding: 16px; }
+      .proof-body { max-height: 180px; }
+      html[data-run-status="walkthrough"] .proof-body { max-height: 280px; }
+      #proof-benefit { font-size: 15px; }
+      #proof-title { font-size: 22px; }
+      #proof-output, #proof-input { max-height: 110px; }
+      #proof-step { margin-top: 6px; }
+      .checks { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+      .check { padding: 5px 0; flex-direction: column; align-items: flex-start; gap: 4px; }
+      html[data-run-status="walkthrough"] .results { display: none; }
     }
     [hidden] { display: none !important; }
     @media (min-width: 1800px) {
       .scenario-choice { font-size: 19px; }
-      .truth-strip { font-size: 17px; }
       .check-name { font-size: 20px; }
       #evidence-feed li { font-size: 19px; }
       .outcome .label { font-size: 17px; }
@@ -281,7 +240,6 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
     @media (max-width: 1100px) {
       .shell { padding: 20px 24px 28px; }
       .intro { display: block; }
-      .mode-control { display: inline-flex; margin-top: 20px; }
       .runbar { display: block; }
       .transport { justify-content: flex-start; margin-top: 18px; }
       #workflow-graph { min-width: 880px; }
@@ -290,25 +248,19 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
       #feature-proof { margin-top: 0; }
     }
     @media (max-width: 680px) {
-      .shell, html[data-stage="true"] .shell { padding: 16px; }
+      .shell { padding: 16px; }
       .brand { font-size: 20px; }
       .topbar { align-items: flex-start; gap: 12px; }
       .top-actions { flex-wrap: wrap; justify-content: flex-end; max-width: 140px; }
       .top-actions button { min-height: 36px; padding: 6px 10px; font-size: 12px; }
-      h1, html[data-stage="true"] h1 { font-size: 42px; }
+      h1 { font-size: 36px; }
       .intro p { font-size: 17px; }
-      .mode-control { width: 100%; }
-      .mode-control button { flex: 1; font-size: 13px; padding: 10px 8px; }
-      .truth-strip { display: block; font-size: 14px; }
-      .truth-strip span { display: block; }
-      .truth-strip span:last-child { margin-top: 4px; }
       .choices { display: grid; grid-template-columns: 1fr 1fr; }
       .feature-definitions { grid-template-columns: 1fr; gap: 16px; }
       .proof-data { grid-template-columns: 1fr; }
       .scenario-choice { font-size: 15px; padding: 12px 8px; }
       .transport { gap: 6px; }
       #run-button { min-width: 140px; font-size: 17px; }
-      .pace { width: 100%; display: flex; align-items: center; gap: 10px; margin-top: 8px; }
       .graph-header { align-items: flex-start; }
       #flow-summary { font-size: 16px; }
       h2 { font-size: 20px; }
@@ -320,12 +272,6 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
       .outcome .number { font-size: 32px; }
       #evidence-feed li { grid-template-columns: 94px 1fr; font-size: 15px; }
       #evidence-feed code { font-size: 12px; }
-      .details-row { grid-template-columns: 1fr; gap: 0; }
-      .command-row { display: block; }
-      .command-row code { display: block; font-size: 13px; }
-      .command-row button { margin-top: 10px; }
-      footer { display: block; }
-      footer span { display: block; margin-top: 8px; }
     }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
   </style>
@@ -338,50 +284,31 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
         <span>Launch Rescue</span>
       </div>
       <div class="top-actions">
-        <button class="quiet" id="walkthrough-toggle" aria-pressed="true">Feature walkthrough</button>
-        <button class="quiet" id="cue-toggle" aria-pressed="false">Presenter cues</button>
-        <button class="quiet" id="stage-toggle" aria-pressed="false">Stage view</button>
         <button class="quiet" id="theme-toggle" aria-label="Switch color theme">Theme</button>
       </div>
     </header>
     <section class="intro" aria-labelledby="mission-title">
       <div>
-        <h1 id="mission-title">See Dynamic + Agentic Workflows.</h1>
-        <p>Code controls the process. Agents explain and challenge the evidence. Tests determine whether it worked.</p>
-      </div>
-      <div class="mode-control" role="group" aria-label="Execution mode">
-        <button id="offline-mode" aria-pressed="true">Offline rehearsal</button>
-        <button id="native-mode" aria-pressed="false">Native Copilot</button>
+        <h1 id="mission-title">Dynamic + Agentic Workflows</h1>
+        <p>Evidence changes the plan. Code coordinates. Models challenge.</p>
       </div>
     </section>
-    <div class="truth-strip" id="truth-strip">
-      <span><strong id="mode-label">OFFLINE REHEARSAL</strong> <span id="mode-description">Real JavaScript workers and checks. No LLM calls.</span></span>
-      <span>Synthetic data. Local draft only. Nothing deployed.</span>
-    </div>
     <section class="feature-definitions" aria-label="The two workflow features demonstrated">
       <div>
         <h2>Dynamic Workflow: CODE controls execution</h2>
-        <p>Code chooses branches, parallel work, saved steps, and checkpoints. <strong id="dynamic-execution">Offline: local rehearsal</strong></p>
+        <p>Evidence selects branches. Independent work runs in parallel. Completed steps are saved.</p>
       </div>
       <div>
         <h2>Agentic Workflow: MODEL reasons over evidence</h2>
-        <p>A Copilot model explains or rejects a repair. GitHub Agentic Workflows (gh-aw on Actions) is a different tool. <strong id="agentic-execution">Not active: no LLM calls</strong></p>
+        <p>Specialist models interpret evidence, explain repairs, and independently challenge the answer.</p>
       </div>
     </section>
     <div id="notice" role="alert" hidden></div>
-    <section id="native-panel" hidden aria-labelledby="native-title">
-      <h2 id="native-title">Run the real workflow in Copilot.</h2>
-      <p>This page observes local artifacts; it does not start models. Review the extension, run <code>npm ci</code> once, and check your Copilot sign-in and preview eligibility. The version-matched SDK runner uses <strong>GPT-6.1 Sol / max</strong> and <strong>Sonnet 5.5 / high</strong>.</p>
-      <div class="command-row">
-        <code id="native-command">node .\native\Run-Sdk.mjs --live --pause --walkthrough</code>
-        <button id="copy-command">Copy command</button>
-      </div>
-      <div class="native-facts"><span id="observer-status">Checking local observer…</span><span>Preview + eligible Copilot plan required</span><span>Actual usage: inspect /workflows</span></div>
-      <p>Use <code>--rehearsal --pause --walkthrough</code> for an actual-runtime test without models. Type <strong>NEXT</strong> at each feature stop; only the final <strong>APPROVE</strong> approves the draft. The browser never resumes native work.</p>
-    </section>
-    <section class="runbar" aria-label="Mission controls">
+    <p id="observed-scenario" hidden></p>
+    <section class="runbar" id="mission-controls" aria-label="Mission controls">
+      <span id="selected-challenge" hidden></span>
       <fieldset id="scenario-controls">
-        <legend>Ask the room: what should break?</legend>
+        <legend>Choose a launch challenge</legend>
         <div class="choices">
           <button class="scenario-choice" data-scenario="retries" aria-pressed="false">Retry storm</button>
           <button class="scenario-choice" data-scenario="capacity" aria-pressed="false">Room switch</button>
@@ -393,9 +320,7 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
         <button class="primary" id="run-button">Run rescue</button>
         <button id="pause-button" disabled>Pause</button>
         <button class="quiet" id="reset-button">New run</button>
-        <label class="pace" for="pace-select">Presentation pacing
-          <select id="pace-select"><option value="650">Normal</option><option value="120">Fast</option><option value="0">Instant</option></select>
-        </label>
+        <button class="quiet" id="walkthrough-toggle" aria-pressed="true">Step by step</button>
       </div>
     </section>
     <section class="feature-layout" aria-label="Execution and feature proof">
@@ -409,20 +334,19 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
         <svg id="workflow-graph" viewBox="0 0 1540 365" role="group" aria-label="Major workflow stages; select a node to inspect actual execution"></svg>
         <div class="graph-foot"><span id="graph-caption">Major stages shown. Specialist nodes appear only when evidence requires them.</span><div class="legend"><span>Code + checks</span><span class="agent-key" id="specialist-legend">Local workers</span><span>Human gate</span></div></div>
       </div>
-      <div id="twist-banner" hidden><strong>Scripted demo input: 200 seats disappear.</strong><p>The first plan is already built. A failed acceptance check must change the next step.</p></div>
+      <div id="twist-banner" hidden><strong>New evidence: 200 seats are no longer available.</strong><p>The first plan is already built. A failed capacity check changes the next step.</p></div>
       <aside id="task-inspector" hidden aria-labelledby="inspector-title"><button id="close-inspector" aria-label="Close task details">Close</button><h2 id="inspector-title">Task details</h2><p id="inspector-detail"></p></aside>
-      <aside id="presenter-cue" hidden><strong>Say this</strong><p id="cue-text">“Which failure should we trigger? Show of hands. We won't choose the agents; the evidence will.”</p></aside>
     </section>
     <aside id="feature-proof" aria-labelledby="proof-title">
-      <div id="proof-feature">FEATURE WALKTHROUGH</div>
-      <p id="proof-pause">EXECUTION PROOF</p>
-      <h2 id="proof-title">See which part is doing the work</h2>
+      <div id="proof-feature">WORKFLOW</div>
+      <p id="proof-pause">READY</p>
+      <h2 id="proof-title">Every decision, explained</h2>
       <h3 class="proof-benefit-label">Why it helps</h3>
       <p id="proof-benefit">Dynamic Workflow code selects and saves the steps. Agentic Workflow reasoning interprets and challenges evidence.</p>
       <p id="proof-verdict-rule" hidden></p>
-      <p id="proof-execution">Offline JavaScript rehearsal. Native Copilot API is not executing.</p>
+      <p id="proof-execution"></p>
       <div id="proof-body" class="proof-body" tabindex="0" aria-label="Feature code, input, output, and prompt">
-        <div class="proof-code-label">Relevant native code / excerpt</div>
+        <div class="proof-code-label">Execution code</div>
         <pre id="proof-code"></pre>
         <div class="proof-data">
           <section><h3>Input / evidence</h3><pre id="proof-input"></pre></section>
@@ -430,20 +354,19 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
         </div>
         <details id="proof-prompt-details" hidden><summary id="proof-prompt-label">Exact model prompt</summary><pre id="proof-prompt"></pre></details>
       </div>
-      <details id="proof-history"><summary>Inspect earlier feature proofs</summary>
+      <details id="proof-history"><summary>Execution history</summary>
         <select id="proof-step" aria-label="Inspect an executed feature" disabled><option value="">Feature proofs appear as work executes</option></select>
       </details>
-      <p id="proof-control-note"></p>
-      <button class="primary" id="continue-walkthrough" hidden>Continue walkthrough</button>
+      <button class="primary" id="continue-walkthrough" hidden>Continue</button>
     </aside>
     </section>
     <section class="results" aria-label="Measured evidence and acceptance checks">
       <div>
-        <div class="result-heading"><h2>Measured synthetic outcomes</h2><span id="measurement-label">Waiting for execution</span></div>
+        <div class="result-heading"><h2>Launch outcomes</h2><span id="measurement-label">2,500 attendees · sample data</span></div>
         <div class="outcomes">
-          <div class="outcome"><div class="number" id="duplicate-count">—</div><div class="label">Duplicate outcomes</div><div class="comparison" id="duplicate-before">No fixture evaluated yet</div></div>
-          <div class="outcome"><div class="number" id="oversold-count">—</div><div class="label">Seats over capacity</div><div class="comparison" id="oversold-before">No fixture evaluated yet</div></div>
-          <div class="outcome"><div class="number" id="confirmed-count">—</div><div class="label">Unique confirmations</div><div class="comparison" id="waitlist-count">No fixture evaluated yet</div></div>
+          <div class="outcome"><div class="number" id="duplicate-count">—</div><div class="label">Duplicate outcomes</div><div class="comparison" id="duplicate-before">Not evaluated yet</div></div>
+          <div class="outcome"><div class="number" id="oversold-count">—</div><div class="label">Seats over capacity</div><div class="comparison" id="oversold-before">Not evaluated yet</div></div>
+          <div class="outcome"><div class="number" id="confirmed-count">—</div><div class="label">Unique confirmations</div><div class="comparison" id="waitlist-count">Not evaluated yet</div></div>
         </div>
         <ul id="evidence-feed" aria-label="Latest evidence"><li><code>WAITING</code><span>The graph is driven by execution events, not a prerecorded animation.</span></li></ul>
       </div>
@@ -452,7 +375,7 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
         <div class="checks" id="checks-list"></div>
         <div id="approval-panel" hidden>
           <h2 id="approval-title">A human still decides.</h2>
-          <p id="approval-detail">The checks and independent review pass. Approve only this synthetic local draft, or keep it on hold.</p>
+          <p id="approval-detail">All checks and independent review passed. Approve the local draft or keep it on hold.</p>
           <div class="approval-actions">
             <button class="primary" id="approve-button">Approve local draft</button>
             <button id="hold-button">Keep on hold</button>
@@ -461,18 +384,8 @@ FORM: CI execution trace, grounded direction 5, seed 389e8ecb. A stable graph ca
         </div>
       </div>
     </section>
-    <section class="details-row" aria-label="Technical details and presenter help">
-      <details><summary>Read the actual workflow source</summary><p>This is the source bundled into both the standalone runner and the native extension. Rehearsal takes the JavaScript branch; live mode calls <code>ctx.agent</code>.</p><pre id="workflow-source"></pre></details>
-      <details><summary>How to present this demo</summary>
-        <ol><li>Ask the audience to choose a failure. Run “Both at once” to show parallel specialists.</li><li>Choose “Surprise me” for the new-evidence moment. Point to the failed capacity check and new branch.</li><li>Pause, explain the saved steps, then resume. At the review gate, inspect evidence before approving.</li><li>Use Native Copilot for actual model calls. If unavailable, say “This is the offline rehearsal: real checks, no LLM.”</li></ol>
-        <p>The feature walkthrough stops automatically at routing, agent explanation, new evidence, checks, and independent review. Use <strong>Continue walkthrough</strong>; final draft approval is a separate action. Choose <strong>Continuous run</strong> to skip teaching stops.</p>
-        <p>Keyboard: <strong>S</strong> run/resume, <strong>P</strong> pause, <strong>V</strong> stage view. Shortcuts do not run while editing a field. Pacing includes intentional presentation delays; this is not a performance benchmark.</p>
-        <label class="seed-control" for="seed-input">Synthetic fixture seed <input id="seed-input" type="number" value="42" min="1" max="9999999" step="1"></label>
-      </details>
-    </section>
-    <footer><span>GitHub Copilot dynamic workflows are public preview. Availability and APIs may change.<br><a href="https://docs.github.com/en/copilot/concepts/agents/dynamic-workflows" target="_blank" rel="noreferrer">Official concepts</a> · <a href="https://docs.github.com/en/copilot/how-tos/use-copilot-agents/use-dynamic-workflows" target="_blank" rel="noreferrer">Official how-to</a> · <a href="https://github.com/github/copilot-sdk/blob/v1.0.19/nodejs/docs/workflows.md" target="_blank" rel="noreferrer">SDK API</a></span><span>This is the local Copilot workflow runtime.<br>GitHub Agentic Workflows (`gh-aw` on Actions) is a different tool, not executed here.</span></footer>
   </main>
-  <noscript>This demo requires JavaScript. All computations are local in offline rehearsal mode.</noscript>
+  <noscript>Enable JavaScript to run the launch workflow.</noscript>
   <!-- BUNDLED_APPLICATION -->
 </body>
 </html>

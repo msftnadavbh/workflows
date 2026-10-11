@@ -5,6 +5,18 @@ import { pathToFileURL } from "node:url";
 import { runLaunchRescue, validateArgs } from "../dist/core.mjs";
 import { LocalContext, newJournal } from "../dist/local-context.mjs";
 
+const customerUrl = "/?scoutTheme=dark";
+const copilotUrl = "/?scoutTheme=dark&execution=copilot";
+
+async function expectCustomerView(page) {
+  expect(await page.locator("body").innerText()).not.toMatch(
+    /offline|rehearsal|presenter|stage view|presentation pacing|show run command|scripted demo|JS SUBSTITUTE|no LLM|walkthrough/i,
+  );
+  await expect(page.locator(
+    "#offline-mode, #native-mode, #truth-strip, #cue-toggle, #presenter-cue, #stage-toggle, #native-panel, #pace-select, #seed-input, #workflow-source",
+  )).toHaveCount(0);
+}
+
 async function nativeFixture(overrides = {}) {
   const args = validateArgs({ scenario: "capacity", mode: "rehearsal", pauseForApproval: false });
   const context = new LocalContext(newJournal(args, "native-regression"));
@@ -18,9 +30,8 @@ async function nativeFixture(overrides = {}) {
 }
 
 async function begin(page, scenario) {
-  await page.goto("/?scoutTheme=dark");
-  await page.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
-  await page.getByLabel("Presentation pacing").selectOption("0");
+  await page.goto(customerUrl);
+  await page.getByRole("button", { name: "Step by step", exact: true }).click();
   await page.locator(`[data-scenario="${scenario}"]`).click();
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
@@ -34,8 +45,8 @@ for (const [scenario, confirmed, waitlisted] of [
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await begin(page, scenario);
-    await expect(page.locator("#mode-label")).toHaveText("OFFLINE REHEARSAL");
-    await expect(page.locator("#mode-description")).toContainText("No LLM calls");
+    await expectCustomerView(page);
+    await expect(page.locator("#proof-execution")).toHaveText("JavaScript · local execution");
     await expect(page.locator("#confirmed-count")).toHaveText(confirmed);
     await expect(page.locator("#waitlist-count")).toContainText(waitlisted);
     await expect(page.locator("#checks-total")).toHaveText("3 / 3 pass");
@@ -59,16 +70,17 @@ for (const [scenario, confirmed, waitlisted] of [
 }
 
 test("pause, reload, and resume preserve a saved run", async ({ page }) => {
-  await page.goto("/?scoutTheme=dark");
-  await page.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
+  await page.goto(customerUrl);
+  await page.getByRole("button", { name: "Step by step", exact: true }).click();
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(page.locator("#status-label")).toHaveText("Running");
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   await expect(page.locator("#status-label")).toHaveText("Paused");
-  await expect(page.getByRole("button", { name: "Room switch", exact: true })).toBeDisabled();
+  await expect(page.locator("#scenario-controls")).toBeHidden();
+  await expect(page.locator('[data-scenario="capacity"]')).toBeDisabled();
+  await expect(page.locator("#selected-challenge")).toContainText("Surprise me");
   await page.reload();
   await expect(page.locator("#status-label")).toHaveText("Paused");
-  await page.getByLabel("Presentation pacing").selectOption("0");
   await page.getByRole("button", { name: "Resume saved run", exact: true }).click();
   await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
 });
@@ -82,14 +94,18 @@ test("hold survives reload and does not imply approval", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
 });
 
-test("invalid input is an explicit error, not a successful fallback", async ({ page }) => {
-  await page.goto("/");
-  await page.getByText("How to present this demo", { exact: true }).click();
-  await page.getByLabel("Synthetic fixture seed").fill("0");
-  await page.getByRole("button", { name: "Run rescue", exact: true }).click();
+test("invalid saved input is reported instead of restoring a successful-looking run", async ({ page }) => {
+  await begin(page, "retries");
+  await page.evaluate(() => {
+    const key = "launch-rescue.rehearsal.v3";
+    const saved = JSON.parse(localStorage.getItem(key));
+    saved.journal.args.seed = 0;
+    localStorage.setItem(key, JSON.stringify(saved));
+  });
+  await page.reload();
   await expect(page.getByRole("alert")).toContainText("Seed must be");
-  await expect(page.locator("#status-label")).toHaveText("Held / error");
   await expect(page.locator("#checks-total")).toHaveText("0 / 3 run");
+  await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
 });
 
 test("actual evidence downloads as JSON with honest execution labeling", async ({ page }) => {
@@ -102,7 +118,7 @@ test("actual evidence downloads as JSON with honest execution labeling", async (
   const chunks = [];
   for await (const chunk of stream) chunks.push(chunk);
   const result = JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  expect(result.engine).toBe("standalone-rehearsal");
+  expect(result.engine).toBe("standalone-javascript");
   expect(result.report.synthetic).toBe(true);
   expect(result.report.status).toBe("draft");
   expect(result.report.after.uniqueConfirmed).toBe(2500);
@@ -117,22 +133,52 @@ test("native observation cannot approve a native checkpoint from the browser", a
       events: [{ type: "phase", id: "phase:Observe", title: "Observe" }],
       report: null, error: null } } });
   });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
-  await expect(page.locator("#mode-label")).toHaveText("NATIVE COPILOT / LIVE RUN");
-  await expect(page.getByRole("button", { name: "Show run command", exact: true })).toBeEnabled();
+  await page.goto(copilotUrl);
+  await expect(page.locator("#status-label")).toHaveText("Running");
+  await expectCustomerView(page);
+  await expect(page.locator("#mission-controls")).toBeHidden();
   await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
-  await expect(page.getByRole("button", { name: "Offline rehearsal", exact: true })).toBeEnabled();
-  await page.getByRole("button", { name: "Offline rehearsal", exact: true }).click();
-  await expect(page.locator("#mode-label")).toHaveText("OFFLINE REHEARSAL");
+  await page.goto(customerUrl);
+  await expect(page.locator("#mission-controls")).toBeVisible();
+  await expect(page.locator("#proof-execution")).toHaveText("JavaScript · local execution");
+});
+
+test("waiting for Copilot never substitutes a local result or exposes setup controls", async ({ page }) => {
+  await page.route("**/api/native/latest", (route) => route.fulfill({ json: { run: null } }));
+  await page.goto(copilotUrl);
+  await expect(page.locator("#status-label")).toHaveText("Waiting for run");
+  await expect(page.locator("#proof-execution")).toHaveText("Waiting for Copilot execution");
+  await expect(page.locator("#checks-total")).toHaveText("0 / 3 run");
+  await expect(page.locator("#mission-controls")).toBeHidden();
+  await expectCustomerView(page);
+});
+
+test("an invalid workflow link reports the problem instead of selecting a different runtime", async ({ page }) => {
+  await page.goto("/?execution=unknown");
+  await expect(page.getByRole("alert")).toContainText("Unknown workflow view");
+  await expect(page.locator("#status-label")).toHaveText("Held / error");
+  await expect(page.locator("#checks-total")).toHaveText("0 / 3 run");
+  await expectCustomerView(page);
+});
+
+test("Copilot failures stay explicit without offering a rehearsal fallback", async ({ page }) => {
+  const snapshot = await nativeFixture({
+    status: "error", phase: "Repair", events: [], report: null,
+    error: "Retry specialist returned no usable result. Retry or use the labeled rehearsal.",
+  });
+  await page.route("**/api/native/latest", (route) => route.fulfill({ json: { run: snapshot } }));
+  await page.goto(copilotUrl);
+  await expect(page.getByRole("alert")).toHaveText("Retry specialist returned no usable result. Retry the workflow.");
+  await expect(page.locator("#status-label")).toHaveText("Held / error");
+  await expect(page.locator("#checks-total")).toHaveText("0 / 3 run");
+  await expectCustomerView(page);
 });
 
 test("the portable HTML executes offline directly from file:// and preserves its checkpoint", async ({ page }) => {
   const requests = [];
   page.on("request", (request) => { if (/^https?:/.test(request.url())) requests.push(request.url()); });
   await page.goto(`${pathToFileURL(resolve("Launch-Rescue-Demo.html")).href}?scoutTheme=dark`);
-  await page.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
-  await page.getByLabel("Presentation pacing").selectOption("0");
+  await page.getByRole("button", { name: "Step by step", exact: true }).click();
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
   await expect(page.locator("#confirmed-count")).toHaveText("2,300");
@@ -149,32 +195,61 @@ test("native cancellation never appears as a resumable pause", async ({ page }) 
       controller: "copilot-session", args: { scenario: "mixed", mode: "live", seed: 42, pauseForApproval: true },
       status: "cancelled", phase: "Repair", updatedAt: "2026-10-10T18:00:00.000Z", events: [], report: null, error: null } } });
   });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await page.goto(copilotUrl);
   await expect(page.locator("#status-label")).toHaveText("Cancelled");
-  await expect(page.locator("#native-command")).not.toContainText("--resume");
+  await expectCustomerView(page);
   await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
 });
 
-test("SDK checkpoints direct review to the owning terminal, not browser or CLI resume", async ({ page }) => {
+test("Copilot checkpoints stay read-only without exposing terminal instructions", async ({ page }) => {
   await page.route("**/api/native/latest", async (route) => {
     await route.fulfill({ json: { run: { engine: "copilot-runtime", runId: "sdk-paused", sessionId: "sdk-session",
       controller: "sdk-terminal", args: { scenario: "mixed", mode: "live", seed: 42, pauseForApproval: true },
       status: "paused", phase: "Approve", updatedAt: "2026-10-10T18:00:00.000Z", events: [], report: null, error: null } } });
   });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
-  await expect(page.locator("#native-command")).toContainText("running SDK terminal");
-  await expect(page.locator("#native-command")).not.toContainText("--resume");
-  await expect(page.locator("#copy-command")).toBeHidden();
+  await page.goto(copilotUrl);
+  await expect(page.locator("#status-label")).toHaveText("Paused");
+  await expectCustomerView(page);
+  expect(await page.locator("body").innerText()).not.toMatch(/SDK terminal|--resume|Copy command/);
   await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
 });
+
+for (const [featureId, model, effort] of [
+  ["repair", "gpt-6.1-sol", "max"],
+  ["review", "claude-sonnet-5.5", "high"],
+]) {
+  test(`Copilot ${featureId} keeps the actual model and exact prompt visible without backstage UI`, async ({ page }) => {
+    const snapshot = await nativeFixture();
+    const stop = snapshot.events.findIndex((event) => event.type === "feature" && event.id === featureId);
+    const events = snapshot.events.slice(0, stop + 1).map((event) => event.type === "feature"
+      ? { ...event, handoffs: event.handoffs.map((handoff) => ({
+        ...handoff, source: "model",
+        model: event.id === "review" ? "claude-sonnet-5.5" : "gpt-6.1-sol",
+        reasoningEffort: event.id === "review" ? "high" : "max",
+      })) } : event.type === "task" && event.kind === "worker" ? { ...event, kind: "agent", detail: `${model} / ${effort}` } : event);
+    const proof = events.at(-1);
+    await page.route("**/api/native/latest", (route) => route.fulfill({ json: { run: {
+      ...snapshot, args: { ...snapshot.args, mode: "live", pauseForApproval: true, walkthrough: true },
+      status: "paused", phase: featureId === "review" ? "Challenge" : "Repair",
+      pauseKey: `launch-rescue-v3:walkthrough:${featureId}`, events, report: null,
+    } } }));
+    await page.goto(copilotUrl);
+    await expect(page.locator("#status-label")).toHaveText("Checkpoint");
+    await expect(page.locator("#proof-feature")).toHaveText("AGENTIC WORKFLOW");
+    await expect(page.locator("#proof-execution")).toContainText(`${model} / ${effort}`);
+    await expect(page.locator("#proof-code")).toContainText("ctx.agent");
+    await page.locator("#proof-prompt-label").click();
+    await expect(page.locator("#proof-prompt")).toContainText(proof.handoffs[0].prompt);
+    await expectCustomerView(page);
+    await expect(page.getByRole("button", { name: "Continue", exact: true })).toBeHidden();
+    await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
+  });
+}
 
 test("completed native draft-only runs never invite approval in a closed terminal", async ({ page }) => {
   const snapshot = await nativeFixture();
   await page.route("**/api/native/latest", (route) => route.fulfill({ json: { run: snapshot } }));
-  await page.goto("/");
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await page.goto(copilotUrl);
   await expect(page.locator("#status-label")).toHaveText("Draft complete");
   await expect(page.locator("#approval-detail")).not.toContainText("type APPROVE");
   await expect(page.locator('[data-task="approval"] .graph-status')).not.toContainText("Awaiting human review");
@@ -189,8 +264,7 @@ test("a recovered observer clears the old error even when the snapshot is unchan
     await route.fulfill(calls === 2 ? { status: 500, json: { error: "Temporary outage" } }
       : { json: { run: snapshot } });
   });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await page.goto(copilotUrl);
   await expect(page.locator("#status-label")).toHaveText("Draft complete");
   await expect(page.getByRole("alert")).toContainText("HTTP 500");
   await expect.poll(() => calls).toBeGreaterThanOrEqual(3);
@@ -210,8 +284,7 @@ test("native polling never overlaps requests on a slow observer", async ({ page 
     await route.fulfill({ json: { run: snapshot } });
     active--;
   });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await page.goto(copilotUrl);
   await expect(page.locator("#status-label")).toHaveText("Draft complete");
   expect(peak).toBe(1);
 });
@@ -225,17 +298,15 @@ test("an older native snapshot cannot regress the current completed run", async 
     calls++;
     return route.fulfill({ json: { run: calls === 1 ? completed : earlier } });
   });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await page.goto(copilotUrl);
   await expect(page.locator("#status-label")).toHaveText("Draft complete");
   await expect.poll(() => calls).toBeGreaterThanOrEqual(2);
   await expect(page.locator("#status-label")).toHaveText("Draft complete");
 });
 
 test("the narrated normal-speed flow exposes the failed check before recovery", async ({ page }) => {
-  await page.goto("/?scoutTheme=dark");
-  await page.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
-  await page.getByRole("button", { name: "Stage view", exact: true }).click();
+  await page.goto(customerUrl);
+  await page.getByRole("button", { name: "Step by step", exact: true }).click();
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(page.locator('[data-task="verify-1"]')).toHaveAttribute("data-state", "failed");
   await page.getByRole("button", { name: "Pause", exact: true }).click();
@@ -251,16 +322,40 @@ test("the narrated normal-speed flow exposes the failed check before recovery", 
   await expect(page.locator("#flow-summary")).toContainText("failed capacity check added a specialist");
 });
 
-test("native setup remains discoverable when the observer opens an earlier finished run", async ({ page }) => {
+test("completed Copilot runs show results without any setup or presenter controls", async ({ page }) => {
   const snapshot = await nativeFixture();
   await page.route("**/api/native/latest", (route) => route.fulfill({ json: { run: snapshot } }));
-  await page.goto("/?scoutTheme=dark");
-  await page.getByRole("button", { name: "Stage view", exact: true }).click();
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await page.goto(copilotUrl);
   await expect(page.locator("#status-label")).toHaveText("Draft complete");
-  await page.getByRole("button", { name: "Show run command", exact: true }).click();
-  await expect(page.locator("#native-panel")).toBeVisible();
-  await expect(page.locator("#native-command")).toContainText("Run-Sdk.mjs --live --pause");
+  await expectCustomerView(page);
+  await expect(page.locator("#mission-controls")).toBeHidden();
+  await expect(page.locator("#proof-pause")).toHaveText("COMPLETED");
+});
+
+test("execution history refreshes its source labels when the observer moves to another run", async ({ page }) => {
+  const javascript = await nativeFixture();
+  const model = {
+    ...javascript, runId: "model-history",
+    args: { ...javascript.args, mode: "live" },
+    report: { ...javascript.report, runId: "model-history", mode: "live" },
+    events: javascript.events.map((event) => event.type === "feature" ? {
+      ...event, handoffs: event.handoffs.map((handoff) => ({
+        ...handoff, source: "model",
+        model: event.id === "review" ? "claude-sonnet-5.5" : "gpt-6.1-sol",
+        reasoningEffort: event.id === "review" ? "high" : "max",
+      })),
+    } : event),
+  };
+  let calls = 0;
+  await page.route("**/api/native/latest", (route) => {
+    calls++;
+    return route.fulfill({ json: { run: calls === 1 ? model : javascript } });
+  });
+  await page.goto(copilotUrl);
+  await expect(page.locator('#proof-step option[value="repair"]')).toContainText("Agentic Workflow");
+  await expect.poll(() => calls).toBeGreaterThanOrEqual(2);
+  await expect(page.locator('#proof-step option[value="repair"]')).toContainText("Repair logic");
+  await expectCustomerView(page);
 });
 
 test("keyboard inspection exposes the same measured failure as pointer inspection", async ({ page }) => {
@@ -278,16 +373,15 @@ test("keyboard inspection exposes the same measured failure as pointer inspectio
 
 test("the default demo teaches Dynamic and Agentic Workflows as separate executed steps", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.goto("/?scoutTheme=dark");
-  await expect(page.getByRole("button", { name: "Feature walkthrough", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.goto(customerUrl);
+  await expect(page.getByRole("button", { name: "Step by step", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("heading", { name: "Dynamic Workflow: CODE controls execution", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Agentic Workflow: MODEL reasons over evidence", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Stage view", exact: true }).click();
-  await page.getByLabel("Presentation pacing").selectOption("0");
+  await expectCustomerView(page);
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
   const lessons = ["route", "repair", "adapt", "verify", "review"];
   for (const id of lessons) {
-    await expect(page.locator("#status-label")).toHaveText("Feature walkthrough paused");
+    await expect(page.locator("#status-label")).toHaveText("Checkpoint");
     await expect(page.locator("#proof-step")).toHaveValue(id);
     await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
     expect(await page.locator("#continue-walkthrough").evaluate((element) => element.getBoundingClientRect().bottom <= innerHeight)).toBe(true);
@@ -300,22 +394,24 @@ test("the default demo teaches Dynamic and Agentic Workflows as separate execute
       await expect(page.locator('[data-task="dedupe-specialist-1"]')).toHaveCount(0);
     }
     if (id === "repair" || id === "review") {
-      await expect(page.locator("#proof-feature")).toHaveText("AGENTIC WORKFLOW");
-      await expect(page.locator("#proof-execution")).toContainText("JavaScript substitute");
-      await expect(page.locator("#proof-execution")).toContainText("No agent or LLM");
+      await expect(page.locator("#proof-feature")).toHaveText(id === "review" ? "CODE / REVIEW" : "CODE / REPAIR");
+      await expect(page.locator("#proof-execution")).toHaveText("JavaScript · local execution");
+      await expect(page.locator("#proof-code")).not.toContainText("ctx.agent");
       await expect(page.locator("#proof-output")).toContainText("rationale");
-      await page.locator("#proof-prompt-label").click();
-      await expect(page.locator("#proof-prompt-label")).toContainText("not sent in rehearsal");
-      await expect(page.locator("#proof-prompt")).toContainText(id === "repair" ? "E-RETRY" : "Independently challenge");
-      await page.locator("#proof-prompt-label").click();
+      await expect(page.locator("#proof-prompt-details")).toBeHidden();
+      await expect(page.locator('[data-task="reviewer"] .graph-kind')).toHaveText("JAVASCRIPT");
     }
-    if (id === "review") await expect(page.locator("#proof-verdict-rule")).toContainText("REJECT → run held");
+    if (id === "review") {
+      await expect(page.locator("#proof-verdict-rule")).toContainText("REJECT → run held");
+      expect((await page.locator("#proof-step option").allTextContents()).join(" ")).not.toMatch(/Agentic Workflow|new agent/);
+    }
     if (id === "adapt") {
       await expect(page.locator("#proof-input")).toContainText("200 seats over capacity");
       await expect(page.locator("#proof-output")).toContainText("capacity specialist");
       await expect(page.locator('[data-task="capacity-specialist-2"]')).toHaveAttribute("data-state", "waiting");
     }
-    await page.getByRole("button", { name: "Continue walkthrough", exact: true }).click();
+    await expectCustomerView(page);
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
   }
   await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
   await expect(page.locator("#proof-feature")).toHaveText("DYNAMIC WORKFLOW / HUMAN");
@@ -330,19 +426,18 @@ test("the default demo teaches Dynamic and Agentic Workflows as separate execute
 });
 
 test("reloading a teaching stop preserves the lesson and cannot approve the draft", async ({ page }) => {
-  await page.goto("/?scoutTheme=dark");
-  await page.getByLabel("Presentation pacing").selectOption("0");
+  await page.goto(customerUrl);
   await page.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(page.locator("#proof-step")).toHaveValue("route");
   await page.reload();
-  await expect(page.locator("#status-label")).toHaveText("Feature walkthrough paused");
+  await expect(page.locator("#status-label")).toHaveText("Checkpoint");
   await expect(page.locator("#proof-step")).toHaveValue("route");
   await expect(page.getByRole("button", { name: "Approve local draft", exact: true })).toBeHidden();
-  await page.getByRole("button", { name: "Continue walkthrough", exact: true }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.locator("#proof-step")).toHaveValue("repair");
 });
 
-test("native checkpoint review instructions and evidence control fit the stage viewport", async ({ page }) => {
+test("Copilot review and evidence controls fit the customer viewport without a stage toggle", async ({ page }) => {
   const report = (await nativeFixture()).report;
   const snapshot = await nativeFixture({
     status: "awaiting-approval", phase: "Approve", report,
@@ -350,9 +445,7 @@ test("native checkpoint review instructions and evidence control fit the stage v
   });
   await page.route("**/api/native/latest", (route) => route.fulfill({ json: { run: snapshot } }));
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await page.goto("/?scoutTheme=dark");
-  await page.getByRole("button", { name: "Stage view", exact: true }).click();
-  await page.getByRole("button", { name: "Native Copilot", exact: true }).click();
+  await page.goto(copilotUrl);
   await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
   expect(await page.locator("#approval-panel").evaluate((element) => element.getBoundingClientRect().bottom <= innerHeight)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(1080);
@@ -373,10 +466,9 @@ test("capture desktop and mobile evidence without page-level overflow", async ({
   await mkdir("presentation\\assets", { recursive: true });
   await page.setViewportSize({ width: 1920, height: 1080 });
   await begin(page, "mixed");
-  await page.getByRole("button", { name: "Stage view", exact: true }).click();
   await page.screenshot({ path: "presentation\\assets\\demo-desktop.png", fullPage: true });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(1080);
+  const desktopFitsWidth = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+  const desktopHeight = await page.evaluate(() => document.documentElement.scrollHeight);
   const rectangle = await page.locator("#workflow-graph").boundingBox();
   expect(rectangle).not.toBeNull();
   const scale = rectangle.width / 1540;
@@ -398,12 +490,14 @@ test("capture desktop and mobile evidence without page-level overflow", async ({
   }, clippedPaths);
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
   await mobile.goto("http://127.0.0.1:4173/?scoutTheme=light");
-  await mobile.getByRole("button", { name: "Feature walkthrough", exact: true }).click();
-  await mobile.getByLabel("Presentation pacing").selectOption("0");
+  await mobile.getByRole("button", { name: "Step by step", exact: true }).click();
   await mobile.getByRole("button", { name: "Room switch", exact: true }).click();
   await mobile.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(mobile.locator("#status-label")).toHaveText("Review checkpoint");
+  await expectCustomerView(mobile);
   expect(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await mobile.screenshot({ path: "presentation\\assets\\demo-mobile.png", fullPage: true });
   await mobile.close();
+  expect(desktopFitsWidth).toBe(true);
+  expect(desktopHeight).toBeLessThanOrEqual(1080);
 });

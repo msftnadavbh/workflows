@@ -98,7 +98,7 @@ Release observed during research: `gh-aw` **0.89.21**; SDK **1.0.19**. Public re
 
 ## Honest demonstration modes
 
-**Offline rehearsal:** ordinary JavaScript workers execute real allocation logic and contract checks over synthetic data. No model calls, no AI credits, no claimed Copilot subagents. The interface names this mode continuously.
+**Standalone execution:** ordinary JavaScript workers execute real allocation logic and contract checks over synthetic data. No model calls, no AI credits, no claimed Copilot subagents. Customer-facing steps use concise **JAVASCRIPT**, **CODE / REPAIR**, and **CODE / REVIEW** labels rather than rehearsal banners.
 
 **Native rehearsal:** the same logic executes inside the actual Copilot dynamic-workflow runtime without calling a model. This verifies registration, argument passing, phases, durable steps, and result handling without paying for reasoning.
 
@@ -118,9 +118,9 @@ The stage kit now binds these proofs to the tested native source and bundle hash
 
 ## Making the two features visible
 
-The default **Feature walkthrough** pauses at routing, specialist explanation, adaptation, verification, and independent review. Each proof is emitted by the executing workflow and contains its relevant code excerpt, input, output, and benefit. Agent handoffs include the exact supplied prompt, validated response, requested model/effort, and whether a saved result was reused.
+The default **Step by step** flow pauses at routing, specialist explanation, adaptation, verification, and independent review. Each proof is emitted by the executing workflow and contains its relevant code excerpt, input, output, and benefit. Actual model handoffs include the exact supplied prompt, validated response, requested model/effort, and whether a saved result was reused. The customer view contains no presenter cues, runtime picker, stage toggle, command panel, or rehearsal wording.
 
-In native mode, `--walkthrough` uses durable `ctx.pause` teaching checkpoints. **NEXT** resumes the same run to the next lesson; it is not accepted as final approval. Only the separate final **APPROVE** checkpoint approves the synthetic local draft. Offline mode uses JavaScript checkpoint behavior and marks every would-be agent step as **JS SUBSTITUTE**, with a native prompt preview that was not sent to a model.
+In native mode, `--walkthrough` uses durable `ctx.pause` checkpoints. **NEXT** resumes the same run to the next decision; it is not accepted as final approval. Only the separate final **APPROVE** checkpoint approves the synthetic local draft. These operator instructions stay in the terminal and documentation. The standalone view uses JavaScript checkpoints, labels code execution accurately, and does not display hypothetical model prompts.
 
 The visible phrase **Agentic Workflow** describes model reasoning inside this local Copilot process, not an executed `gh-aw` workflow. The model explains and challenges bounded actions; code still defines orchestration and verifies outcomes. No claim is made that agents rewrite the workflow at runtime. S1-S3.
 

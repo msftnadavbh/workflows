@@ -17,9 +17,9 @@ colors:
 typography:
   display:
     fontFamily: '"Segoe UI", Aptos, Calibri, sans-serif'
-    fontSize: "clamp(40px, 4.5vw, 78px)"
+    fontSize: "clamp(36px, 3.4vw, 48px)"
     fontWeight: 750
-    lineHeight: 1.04
+    lineHeight: 1.08
     letterSpacing: "-0.035em"
   body:
     fontFamily: '"Segoe UI", Aptos, Calibri, sans-serif'
@@ -96,7 +96,7 @@ Do not add a second brand accent, glowing edges, or gradients. Do not use status
 
 Segoe UI is the browser workhorse, with Aptos and Calibri fallbacks. Consolas is for source, IDs, commands, and quantities—not decorative technical copy. The PowerPoint uses Aptos Display, Aptos, and Consolas.
 
-The regular display heading ranges from 40 to 78 pixels; stage mode prioritizes the trace and controls instead of the large introduction. Graph titles and acceptance labels use distinct sizes and weights. Secondary body copy uses the stronger secondary-text token in dark mode.
+The display heading ranges from 36 to 48 pixels. The default desktop layout prioritizes the trace and decision without a separate stage mode. Graph titles and acceptance labels use distinct sizes and weights. Secondary body copy uses the stronger secondary-text token in dark mode.
 
 The recorded ramp includes the shipped 12–24-pixel caption, control, graph, and section roles plus 32/38-pixel counts and 42/54-pixel compact display roles. Small utility copy belongs to secondary controls and non-stage details, not the projected decision hierarchy. These are observed values, not additional visual changes or waived defects.
 
@@ -104,7 +104,7 @@ The recorded ramp includes the shipped 12–24-pixel caption, control, graph, an
 
 Two definitions anchor the page: Dynamic Workflow orchestration and Agentic Workflow reasoning. A feature-proof panel sits beside the desktop trace and exposes the selected feature, benefit, code excerpt, input, output, and prompt. The trace has six causal columns; the adaptive branch occupies a third row.
 
-At narrower widths, the proof stacks below the trace and the graph scrolls within its own accessible region. Stage mode keeps the teaching continuation visible within 1920×1080 and focuses on the proof during a guided stop. Measured outcomes return for the separate final human review; longer proof content can scroll inside its keyboard-focusable region.
+At narrower widths, the decision details stack below the trace and the graph scrolls within its own accessible region. The desktop customer layout keeps checkpoint continuation visible within 1920×1080 without a stage toggle. Measured outcomes return for the separate final human review; longer execution details can scroll inside their keyboard-focusable region.
 
 ## Elevation & Depth
 
@@ -116,11 +116,11 @@ Controls and graph nodes use approximately 10-pixel rounding. Larger graph and r
 
 ## Components
 
-Scenario controls show the selected input and lock while a run is active, paused, or at approval. Native mode is a read-only observer. Primary actions use rose; disabled actions use normal disabled affordances and unambiguous wording.
+Scenario controls show the selected input and lock while a run is active, paused, or at approval. The Copilot view is a read-only observer selected by its documented URL, not a customer-facing runtime picker. Primary actions use rose; disabled actions use normal disabled affordances and unambiguous wording.
 
 Graph nodes are keyboard-inspectable, with explicit kind and status. The inspector displays the model/worker distinction and repair evidence provenance. The approval gate treats offline browser approval and native terminal review as separate controls.
 
-A plain-language summary explains the cause and next step. Guided stops pause execution, not just its animation. The proof distinguishes actual model responses from JavaScript substitutes and native prompt previews. **Continue walkthrough** and native **NEXT** never approve a draft. The separate final approval remains explicit.
+A plain-language summary explains the cause and next step. Checkpoints pause execution, not just its animation. JavaScript steps use concise source labels and their executed code; actual model steps show the model, reasoning effort, result, and exact prompt. There are no hypothetical model previews or presenter controls. **Continue** and native **NEXT** never approve a draft. The separate final approval remains explicit.
 
 ## Do's and Don'ts
 

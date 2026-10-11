@@ -12,17 +12,17 @@
 </div>
 
 <p align="center">
-  <img src="./presentation/assets/native-live-feature-repair.png" alt="The feature walkthrough explicitly separates Dynamic Workflow orchestration from Agentic Workflow reasoning and displays an actual model handoff, its input, output, and relevant code." width="100%">
+  <img src="./presentation/assets/demo-desktop.png" alt="Customer-facing workflow execution showing changed inventory, a failed check, the added capacity path, verified outcomes, and separate human approval." width="100%">
 </p>
 
-<p align="center"><em>Actual native feature walkthrough: code controls the process; the agent explains a repair. Synthetic data, no deployment.</em></p>
+<p align="center"><em>Customer-facing execution: evidence changes the path; checks and human review gate the result. Sample event data.</em></p>
 
 > [!NOTE]
-> This is a community demonstration, not an official GitHub product. Copilot **dynamic workflows are public preview**. The offline experience needs no account; native execution requires eligible Copilot authentication and preview access.
+> This is a community demonstration, not an official GitHub product. Copilot **dynamic workflows are public preview**. The standalone experience needs no account; native execution requires eligible Copilot authentication and preview access.
 
 ## Quickstart
 
-### Try the offline demo
+### Try the interactive demo
 
 [Download the stage kit](https://github.com/msftnadavbh/workflows/raw/refs/heads/main/Launch-Rescue-Stage-Kit.zip), extract it, and open **`Launch-Rescue-Demo.html`** in a modern browser. Everything it needs is in that file: no installation, sign-in, or network connection.
 
@@ -33,11 +33,13 @@ git clone https://github.com/msftnadavbh/workflows.git
 Set-Location workflows
 ```
 
-Leave **Feature walkthrough** enabled, choose **Surprise me**, and click **Run rescue**. The demo stops automatically at each feature boundary. Read the highlighted **Dynamic Workflow** or **Agentic Workflow** proof, its code excerpt, input, and output; click **Continue walkthrough** to advance. Final draft approval is a separate action.
+Leave **Step by step** enabled, choose **Surprise me**, and click **Run rescue**. The workflow pauses at each decision boundary. Inspect the execution code, input, and output; click **Continue** to advance. Final draft approval is a separate action.
 
-For an uninterrupted run, toggle **Feature walkthrough** to **Continuous run**. The same proof panel still shows the executed features.
+For an uninterrupted run, toggle **Step by step** to **Continuous run**. The same execution panel still shows the decisions.
 
-**Used here:** JavaScript workers and deterministic checks. **No Copilot dynamic-workflow runtime or LLM calls execute in the standalone offline mode.**
+The customer-facing interface contains no runtime picker, rehearsal banner, presenter cues, stage toggle, setup commands, or presentation controls. The layout adapts automatically. Each executed step identifies its source: **JavaScript** for local code, or the actual **Copilot model and reasoning effort**.
+
+**Used here:** JavaScript workers and deterministic checks. **No Copilot dynamic-workflow runtime or LLM calls execute in the standalone version.**
 
 ### Run the native Copilot workflow
 
@@ -50,7 +52,7 @@ npm ci
 node demo\server.mjs
 ```
 
-Open **http://127.0.0.1:4173/?scoutTheme=dark** and select **Native Copilot**. In a second terminal, from the same folder:
+Open **http://127.0.0.1:4173/?scoutTheme=dark&execution=copilot**. This is the customer-facing view of the Copilot run; setup and authorization remain outside the browser. In a second terminal, from the same folder:
 
 ```powershell
 node native\Run-Sdk.mjs --live --pause --walkthrough --scenario mixed
@@ -70,13 +72,13 @@ These are visible, paced stops in the demo itself—not just documentation:
 | Stop | Feature shown on screen | What you can inspect |
 |---|---|---|
 | **Choose the work** | **Dynamic Workflow** | `ctx.parallel`, measured evidence, and the code-selected specialist list. No agent has run yet. |
-| **Explain a repair** | **Agentic Workflow** | The exact model prompt, cited structured response, model/effort, and the handoff into a bounded policy. Offline mode explicitly shows a JavaScript substitute. |
+| **Explain a repair** | **Agentic Workflow** | The exact model prompt, cited structured response, model/effort, and the handoff into a bounded policy. The standalone version labels the executed logic **CODE / REPAIR**, not an agent. |
 | **Change the next step** | **Dynamic Workflow** | The failed capacity check, new inventory, the retained retry repair, and the added capacity branch. |
 | **Verify the result** | **Deterministic checks** | The actual uniqueness, capacity, and coverage checks—not a model's claim of success. |
 | **Challenge the answer** | **Agentic Workflow** | The independent review prompt, verdict, rationale, and evidence provenance. |
 | **Require a decision** | **Dynamic Workflow + human** | The separate approval checkpoint. After resume, the proof panel shows saved steps reused by the same run. |
 
-The graph marks **AGENTIC / LLM**, **JS SUBSTITUTE**, **PARALLEL SCAN / CODE**, and **WORKFLOW / HUMAN** explicitly. Its highlighted nodes match the selected feature proof. **Why it helps** names the benefit, and the review proof shows both verdict rules: accept continues, reject holds. Open **Inspect earlier feature proofs** to revisit a completed step; the active proof returns when you close node inspection. The native browser never resumes or approves a run.
+The graph marks **AGENTIC / LLM**, **JAVASCRIPT**, **PARALLEL SCAN / CODE**, and **WORKFLOW / HUMAN** explicitly. Its highlighted nodes match the selected execution detail. **Why it helps** names the benefit, and the review shows both verdict rules: accept continues, reject holds. Open **Execution history** to revisit a completed step; the current step returns when you close node inspection. Exact model prompts appear only for model handoffs, not as hypothetical previews for JavaScript steps. The Copilot browser view never resumes or approves a run.
 
 **“Agentic Workflow” here means agent reasoning inside the local Copilot process. It is not the separate GitHub Agentic Workflows (`gh-aw`) engine on Actions.**
 
@@ -166,7 +168,7 @@ Designed for a **2,500-person audience**, with an approximately 25-minute talk a
 | [Feature investigation](./Feature-Research.md) | Verified feature distinctions, preview caveats, and lessons discovered during actual live runs. |
 | [Primary-source inventory](./sources/research.json) | 20 official GitHub, SDK, and VS Code sources supporting the presentation. |
 
-Use **Stage view at 1920x1080**. The feature definitions remain visible, and the graph sits beside the selected proof. During teaching stops, the proof is the focus; measured outcomes return for final review. **Show run command** restores native setup even if an earlier run is displayed. Smaller screens remain operable by scrolling.
+Use a **1920x1080** viewport. The customer layout keeps the feature definitions visible and places the graph beside its execution details without a stage toggle. During checkpoints, the decision is the focus; measured outcomes return for final review. Runtime setup is documented here and in the runbook, not displayed to customers. Smaller screens remain operable by scrolling.
 
 The Windows launcher, `.\Launch-Demo.ps1`, opens the browser only after verifying its own server is ready. Use `-Port 4180` if the default port is occupied, or `-NoBrowser` to start just the local observer.
 

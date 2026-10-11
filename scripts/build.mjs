@@ -11,7 +11,6 @@ export function inlineApplication(template, script) {
 }
 
 async function main() {
-  const source = await readFile(join(root, "demo", "core.ts"), "utf8");
   const template = await readFile(join(root, "demo", "index.html"), "utf8");
   await mkdir(join(root, "dist"), { recursive: true });
   await mkdir(join(root, ".github", "extensions", "launch-rescue"), { recursive: true });
@@ -42,7 +41,6 @@ async function main() {
     entryPoints: [join(root, "demo", "browser.ts")],
     bundle: true, platform: "browser", format: "iife", target: "es2022",
     write: false, minify: false, logLevel: "warning",
-    define: { __WORKFLOW_SOURCE__: JSON.stringify(source) },
   });
   const script = browser.outputFiles[0]?.text;
   if (!script) throw new Error("Browser build produced no JavaScript.");

@@ -8,13 +8,13 @@ web
 
 ## Users
 
-Confirmed: a presenter demonstrating GitHub Copilot agentic and dynamic workflows to 2,500 attendees.
+Confirmed: customers viewing and interacting with GitHub Copilot agentic and dynamic workflows, including a 2,500-attendee conference audience.
 
 Assumption for this delivery: a mixed developer and engineering-lead audience, a 25-minute session, a large projected display, and an approximately eight-minute interactive demo.
 
 ## Product Purpose
 
-Make Dynamic Workflow orchestration and Agentic Workflow reasoning unmistakably different in the demo itself, with paced feature stops, relevant code, actual inputs and outputs, and a separate human decision.
+Make Dynamic Workflow orchestration and Agentic Workflow reasoning unmistakably different in a customer-facing experience, with clear decisions, relevant code, actual inputs and outputs, and a separate human decision.
 
 ## Positioning
 
@@ -34,7 +34,9 @@ The project is a Windows-hosted Git repository with a public source distribution
 - A local approval checkpoint demonstrates a human decision; it is not a security sandbox.
 - Preserve the distinction between Copilot dynamic workflows and the separate GitHub Agentic Workflows project.
 - Describe public-preview functionality and approximate AI-credit limits accurately.
-- The guided feature walkthrough is enabled by default in the standalone demo. Teaching continuation must never count as final draft approval.
+- Step-by-step execution is enabled by default. Continuing a checkpoint must never count as final draft approval.
+- The customer view has no rehearsal banners, runtime picker, presenter cues, stage toggle, setup commands, presentation pacing, or editable fixture controls. Operational setup belongs in the terminal and documentation.
+- JavaScript steps identify their source without pretending to be model agents. Exact prompts are shown only for actual model handoffs.
 
 ## Evidence on Hand
 
@@ -46,7 +48,7 @@ Official GitHub documentation and official SDK source were retrieved on 2026-10-
 2. Let the selected failure change the execution graph.
 3. Make failure and uncertainty visible.
 4. Separate repeatable orchestration from variable model judgment.
-5. Give the presenter a dependable fallback without misrepresenting it as AI.
+5. Keep the experience focused on the workflow, with execution provenance rather than backstage controls.
 
 ## Accessibility & Inclusion
 

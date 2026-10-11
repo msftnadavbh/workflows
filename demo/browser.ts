@@ -8,7 +8,6 @@ import {
   CheckpointPause, LocalContext, PresenterPause, UserCancel, newJournal, type Journal,
 } from "./local-context.js";
 
-declare const __WORKFLOW_SOURCE__: string;
 type UiStatus = "idle" | "running" | "paused" | "walkthrough" | "awaiting-approval" | "completed" | "cancelled" | "held" | "error" | "observing";
 type NativeSnapshot = {
   runId: string; sessionId: string; args: ReturnType<typeof validateArgs>; status: string; phase: string;
@@ -33,11 +32,6 @@ function byId(id: string): HTMLElement {
 function button(id: string): HTMLButtonElement {
   const value = byId(id);
   if (!(value instanceof HTMLButtonElement)) throw new Error(`Expected a button: ${id}`);
-  return value;
-}
-function input(id: string): HTMLInputElement {
-  const value = byId(id);
-  if (!(value instanceof HTMLInputElement)) throw new Error(`Expected an input: ${id}`);
   return value;
 }
 function select(id: string): HTMLSelectElement {
@@ -173,7 +167,7 @@ function readSaved(value: unknown): SavedState {
       || !isRecord(value.journal.steps) || !isRecord(value.journal.checkpoints)
       || !Array.isArray(value.events) || value.events.length > 100
       || typeof value.status !== "string" || !isUiStatus(value.status)) {
-    throw new WorkflowError("Saved rehearsal data is invalid. Use New run to replace only this demo's state.");
+    throw new WorkflowError("Saved workflow data is invalid. Use New run to replace this workflow's state.");
   }
   const args = validateArgs(value.journal.args);
   if (args.mode !== "rehearsal") throw new WorkflowError("A browser journal cannot contain live agent work.");
@@ -213,39 +207,26 @@ let before: Evaluation | null = null;
 let measured: Evaluation | null = null;
 let nativeId: string | null = null;
 let nativeMode: "rehearsal" | "live" = "rehearsal";
-let nativeController: "sdk-terminal" | "copilot-session" = "copilot-session";
 let nativeRevision: string | null = null;
 let nativeObservedAt = 0;
 let nativeRunError: string | null = null;
-let nativeSetupOpen = false;
-let pollGeneration = 0;
-let nativeRequest: AbortController | null = null;
-let pollTimer: ReturnType<typeof setTimeout> | null = null;
 let renderPending = false;
 let selectedTask: string | null = null;
 let walkthroughEnabled = true;
 let selectedProof: string | null = null;
 let activeProof: string | null = null;
 
-const cues: Record<string, string> = {
-  Observe: "“We are reproducing a failure, not asking a model to guess. These are 2,500 synthetic attendees.”",
-  Diagnose: "“Two independent code probes run in parallel. Their results decide whether a specialist is needed.”",
-  Repair: "“Look at the graph: a specialist appeared because evidence justified it. No arbitrary generated code is executed.”",
-  Verify: "“A confident answer is not a passing test. The candidate must satisfy all three contracts.”",
-  Adapt: "“New evidence changed the next step. The workflow preserved the retry repair and added only the missing capacity work.”",
-  Challenge: "“The live workflow asks a different model to challenge the evidence. Offline, this is a separate JavaScript ledger walk.”",
-  Approve: "“The run stops here. Passing checks does not authorize a deployment. This approval is only a local synthetic draft.”",
-  Complete: "“The pattern is evidence, bounded action, independent challenge, and a human checkpoint—not a bigger prompt.”",
-};
-
-function notice(message: string): void { text("notice", message); byId("notice").hidden = false; }
+function notice(message: string): void {
+  text("notice", message.replace("Retry or use the labeled rehearsal.", "Retry the workflow."));
+  byId("notice").hidden = false;
+}
 function clearNotice(): void { byId("notice").hidden = true; text("notice", ""); }
 function save(): void {
   if (!journal || mode !== "offline") return;
   const value: SavedState = { journal, events: [...events.values()], status, phase, report };
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(value)); }
   catch (error) {
-    throw new WorkflowError(`This browser could not save the rehearsal checkpoint. Run stopped; persistence is not guaranteed. ${error instanceof Error ? error.message : String(error)}`);
+    throw new WorkflowError(`This browser could not save the workflow checkpoint. The run stopped because its progress could not be saved. ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 function absorb(event: WorkflowEvent): void {
@@ -289,7 +270,6 @@ function restore(): void {
     journal = saved.journal;
     walkthroughEnabled = journal.args.walkthrough;
     scenario = journal.args.scenario;
-    input("seed-input").value = String(journal.args.seed);
     for (const event of saved.events) absorb(event);
     phase = saved.phase;
     status = saved.status === "running" ? "paused" : saved.status;
@@ -305,13 +285,13 @@ async function execute(resume = false): Promise<void> {
   clearNotice();
   try {
     if (!resume) {
-      const args = validateArgs({ scenario, mode: "rehearsal", seed: Number(input("seed-input").value),
+      const args = validateArgs({ scenario, mode: "rehearsal", seed: 42,
         pauseForApproval: true, walkthrough: walkthroughEnabled });
       resetMemory();
       journal = newJournal(args);
     }
     if (!journal) throw new WorkflowError("There is no saved run to resume.");
-    const context = new LocalContext(journal, () => save(), Number(select("pace-select").value));
+    const context = new LocalContext(journal, () => save(), 350);
     current = context;
     status = "running";
     save();
@@ -357,17 +337,17 @@ function approvalDisplay(): { title: string; detail: string; node: string } {
   if (status === "completed") {
     return report?.status === "approved"
       ? { title: "Local draft approved.", node: "Local draft approved",
-        detail: "The local draft and evidence are ready. No production system or real ticket was changed." }
+        detail: "The local draft and its verified evidence are ready." }
       : { title: "Draft-only run complete.", node: "Draft only / no approval",
-        detail: "Draft-only run finished. No approval was requested or claimed. Start a new checkpoint-enabled run to request review." };
+        detail: "The draft is complete. Approval was not requested for this run." };
   }
   if (status === "held" || status === "cancelled" || status === "error") {
     return {
-      title: status === "held" ? "Host closed. Draft held." : "Run stopped.",
-      node: status === "held" ? "Held / host closed" : "Stopped / no active gate",
+      title: status === "held" ? "Workflow stopped. Draft held." : "Run stopped.",
+      node: status === "held" ? "Draft held" : "Stopped / no active gate",
       detail: report?.status === "approved"
         ? "Local draft approval was recorded before the run stopped. No deployment occurred."
-        : status === "held" ? "The SDK host closed without approval. Start a new run; the closed terminal cannot resume this draft."
+        : status === "held" ? "The workflow closed without approval. This draft remains on hold."
           : "The run stopped without approval. No active review checkpoint remains.",
     };
   }
@@ -375,10 +355,8 @@ function approvalDisplay(): { title: string; detail: string; node: string } {
     return {
       title: "A human still decides.", node: "Awaiting human review",
       detail: mode === "offline"
-        ? "The checks and independent review pass. Approve only this synthetic local draft, or keep it on hold."
-        : nativeController === "sdk-terminal"
-          ? "Review evidence, then type APPROVE in the running SDK terminal. The browser is read-only."
-          : "Inspect the native run in Copilot. Resume in the owning session's /workflows panel; this browser is read-only.",
+        ? "All checks and independent review passed. Approve the local draft or keep it on hold."
+        : "Waiting for approval from the workflow owner. The local draft is not yet approved.",
     };
   }
   return { title: "Review is not open yet.", node: "Review pending",
@@ -386,9 +364,9 @@ function approvalDisplay(): { title: string; detail: string; node: string } {
 }
 
 function flowSummary(): string {
-  if (status === "walkthrough") return "Walkthrough stopped at a feature proof. Read who did the work, why it helps, and what was passed to the next step.";
+  if (status === "walkthrough") return "Checkpoint reached. The next step is ready.";
   if (status === "error" || status === "held" || status === "cancelled") {
-    return "The run stopped. Inspect the explanation; no deployment or ticket purchase occurred.";
+    return "The run stopped. The draft has not been released.";
   }
   if (report) {
     const change = report.verificationRounds === 2
@@ -409,15 +387,22 @@ function flowSummary(): string {
     return retries ? `${retries.toLocaleString()} retry requests found. Add the retry specialist, then test its repair.`
       : `${seats.toLocaleString()} seats are unavailable. Add the capacity specialist, then test its repair.`;
   }
-  if (status === "running") return "Reproduce the failure for 2,500 synthetic attendees. Evidence comes before agents.";
+  if (status === "running") return "Inspecting the launch for 2,500 attendees. Evidence comes before action.";
   return mode === "native"
-    ? "Open the run command in your terminal. This page observes Copilot; it does not start models."
+    ? "Waiting for a Copilot workflow run."
     : "Choose a failure, run the rescue, and follow the evidence from left to right.";
 }
 
 function featureProof(): FeatureProof | null {
   const value = selectedProof ? events.get(`feature:${selectedProof}`) : null;
   return value?.type === "feature" ? value : null;
+}
+
+function featureTitle(proof: FeatureProof | null): string {
+  if (!proof) return "Every decision, explained";
+  if (proof.feature !== "agentic" || proof.handoffs.some((handoff) => handoff.source === "model")) return proof.title;
+  return proof.id === "review" ? "Independent review checks the answer"
+    : proof.id === "repair-2" ? "Capacity logic handles the new evidence" : "Repair logic explains the decision";
 }
 
 function renderFeatureProof(): void {
@@ -430,53 +415,47 @@ function renderFeatureProof(): void {
     if (prompt instanceof HTMLDetailsElement) prompt.open = false;
   }
   const native = mode === "native";
+  const models = proof?.handoffs.filter((handoff) => handoff.source === "model") ?? [];
+  const codeDecision = proof?.feature === "agentic" && models.length === 0;
+  const codeReview = codeDecision && proof?.id === "review";
   document.documentElement.dataset.runStatus = status;
   const names = { dynamic: "DYNAMIC WORKFLOW", agentic: "AGENTIC WORKFLOW", checks: "DETERMINISTIC CHECKS", human: "DYNAMIC WORKFLOW / HUMAN" };
-  text("proof-feature", proof ? names[proof.feature] : "FEATURE WALKTHROUGH");
-  text("proof-title", proof?.title ?? "See which part is doing the work");
+  text("proof-feature", codeDecision ? codeReview ? "CODE / REVIEW" : "CODE / REPAIR" : proof ? names[proof.feature] : "WORKFLOW");
+  text("proof-title", featureTitle(proof));
   text("proof-benefit", proof?.benefit ?? "Dynamic Workflow code selects and saves the steps. Agentic Workflow reasoning interprets and challenges evidence. Checks verify the result; a human approves the local draft.");
   const earlier = proof && activeProof !== proof.id;
-  text("proof-pause", earlier ? "INSPECTING AN EARLIER PROOF"
-    : status === "walkthrough" ? native ? "PAUSED — type NEXT in the SDK terminal" : "PAUSED — continue the walkthrough below"
-      : status === "awaiting-approval" ? native ? "DRAFT READY — type APPROVE in the SDK terminal"
-        : "DRAFT READY — use the separate approval action"
-        : status === "completed" ? "COMPLETED — saved results shown" : "EXECUTION PROOF");
+  text("proof-pause", earlier ? status === "completed" ? "PREVIOUS STEP / COMPLETED RUN" : "PREVIOUS STEP"
+    : status === "walkthrough" ? "CHECKPOINT"
+      : status === "awaiting-approval" ? "APPROVAL REQUIRED"
+        : status === "completed" ? "COMPLETED" : "READY");
   text("proof-verdict-rule", proof?.id === "review" ? "Verdict rules: ACCEPT → human checkpoint. REJECT → run held; no approvable draft." : "");
   byId("proof-verdict-rule").hidden = proof?.id !== "review";
-  const models = proof?.handoffs.filter((handoff) => handoff.source === "model") ?? [];
-  const reused = models.length > 0 && models.every((handoff) => handoff.reused);
-  text("proof-execution", proof?.feature === "agentic"
-    ? models.length ? `${reused ? "Saved" : "Actual"} Copilot model result: ${[...new Set(models.map((handoff) => `${handoff.model} / ${handoff.reasoningEffort}`))].join(", ")}`
-      : "JavaScript substitute. No agent or LLM executed this step."
-    : native ? "Actual Copilot dynamic-workflow runtime." : "Offline JavaScript rehearsal. Native Copilot API is not executing.");
-  text("dynamic-execution", native && nativeId ? "Actual Copilot runtime" : "Offline: local rehearsal");
-  text("agentic-execution", native && nativeMode === "live" && nativeId
-    ? status === "completed" ? "Actual model results retained" : "Native live: Copilot agent reasoning"
-    : "Not active: no LLM calls");
-  text("proof-code", proof?.code ?? 'defineWorkflow({ meta, run });\nawait joinSession({ workflows: [workflow] });');
-  text("proof-input", proof ? JSON.stringify(proof.input, null, 2) : "Choose a scenario, then run the walkthrough.");
+  const savedModels = status === "completed" || models.every((handoff) => handoff.reused);
+  text("proof-execution", models.length
+    ? `${savedModels ? "Saved Copilot result" : "Copilot model"} · ${[...new Set(models.map((handoff) => `${handoff.model} / ${handoff.reasoningEffort}`))].join(", ")}`
+    : native ? nativeId ? codeDecision ? "JavaScript · Copilot workflow runtime" : "Copilot workflow runtime"
+      : "Waiting for Copilot execution" : "JavaScript · local execution");
+  if (codeReview) text("proof-benefit", "An independent ledger check walks every outcome against current capacity and accounts for every attendee. A rejection holds the candidate.");
+  text("proof-code", codeDecision ? codeReview ? "return independentLedgerReview(fixture, policy, evidence);"
+    : "return {\n  ...localProposal(repair, snapshot),\n  round, evidenceSnapshot: snapshot\n};"
+    : proof?.code ?? 'const scans = await ctx.parallel([...]);\nif (retryCount > 0) needed.push("dedupe");');
+  text("proof-input", proof ? JSON.stringify(proof.input, null, 2) : "Choose a launch challenge and run the workflow.");
   text("proof-output", proof ? JSON.stringify(proof.output, null, 2) : "The actual input and output appear here at every stop.");
-  const prompt = proof?.handoffs.map((handoff) => `${handoff.label}\n${handoff.prompt}`).join("\n\n") ?? "";
+  const prompt = models.map((handoff) => `${handoff.label}\n${handoff.prompt}`).join("\n\n");
   text("proof-prompt", prompt);
   byId("proof-prompt-details").hidden = !prompt;
-  text("proof-prompt-label", models.length ? "Exact prompt supplied to the model" : "Native prompt preview — not sent in rehearsal");
-  text("proof-control-note", earlier ? "This is historical evidence. Continuing still advances the current workflow stop."
-    : status === "walkthrough"
-    ? native ? "The browser cannot advance. NEXT continues teaching; it does not approve the draft."
-      : "Continuing teaches the next feature. It is not draft approval."
-    : status === "awaiting-approval" ? "The separate human approval checkpoint is now active."
-      : "Select a graph node or earlier proof to inspect the feature.");
+  text("proof-prompt-label", "Exact model prompt");
   button("continue-walkthrough").hidden = native || status !== "walkthrough";
   const chooser = select("proof-step");
   const proofs = [...events.values()].filter((event): event is FeatureProof => event.type === "feature");
-  const signature = proofs.map((item) => item.id).join(",");
+  const signature = JSON.stringify(proofs.map((item) => [item.id, featureTitle(item)]));
   if (chooser.dataset.proofs !== signature) {
     chooser.replaceChildren();
     const empty = document.createElement("option");
     empty.value = ""; empty.textContent = "Feature proofs appear as work executes"; chooser.append(empty);
     proofs.forEach((item, index) => {
       const option = document.createElement("option");
-      option.value = item.id; option.textContent = `${index + 1}. ${item.title}`; chooser.append(option);
+      option.value = item.id; option.textContent = `${index + 1}. ${featureTitle(item)}`; chooser.append(option);
     });
     chooser.dataset.proofs = signature;
   }
@@ -490,7 +469,7 @@ function drawGraph(): void {
   const focusedTask = document.activeElement instanceof Element && graph.contains(document.activeElement)
     ? document.activeElement.closest("[data-task]")?.getAttribute("data-task") : null;
   const adapted = Boolean(taskEvent("rescan-inventory") || taskEvent("capacity-specialist-2"));
-  const stage = document.documentElement.dataset.stage === "true" && innerWidth > 1100;
+  const stage = innerWidth > 1100;
   const top = stage ? 38 : 42;
   const main = stage ? 90 : 128;
   const lower = stage ? 142 : 214;
@@ -570,7 +549,7 @@ function drawGraph(): void {
     const parallel = scenario === "parallel" && node.id.endsWith("specialist-1");
     const label = node.id.startsWith("scan-") ? "PARALLEL SCAN / CODE"
       : kind === "agent" ? parallel ? "AGENTIC / PARALLEL" : "AGENTIC / LLM"
-      : kind === "worker" ? parallel ? "PARALLEL / JS" : "JS SUBSTITUTE"
+      : kind === "worker" ? parallel ? "PARALLEL / JAVASCRIPT" : "JAVASCRIPT"
       : kind === "gate" ? "WORKFLOW / HUMAN" : "CODE / CHECKS";
     group.append(svgText(node.x + 16, node.y + (stage ? 16 : 22), label, "graph-kind"));
     node.lines.forEach((line, index) => group.append(svgText(node.x + 16, node.y + (stage ? 34 : 49) + index * (stage ? 22 : 24), line, "graph-title")));
@@ -622,51 +601,42 @@ function renderEvidence(): void {
 function render(): void {
   const active = status === "running";
   const native = mode === "native";
-  document.documentElement.dataset.nativeConnected = String(native && nativeId !== null);
-  document.documentElement.dataset.nativeSetup = String(native && nativeSetupOpen);
+  document.documentElement.dataset.execution = native ? "copilot" : "javascript";
+  byId("mission-controls").hidden = native;
+  byId("observed-scenario").hidden = !native || nativeId === null;
+  const scenarioNames: Record<Scenario, string> = {
+    retries: "Retry storm", capacity: "Room switch", parallel: "Both at once", mixed: "Surprise me",
+  };
+  text("observed-scenario", `Launch challenge: ${scenarioNames[scenario]}`);
+  const scenarioLocked = active || status === "paused" || status === "walkthrough" || status === "awaiting-approval";
+  byId("scenario-controls").hidden = scenarioLocked;
+  byId("selected-challenge").hidden = !scenarioLocked;
+  text("selected-challenge", `Launch challenge: ${scenarioNames[scenario]}`);
   const canResume = status === "paused";
   document.querySelectorAll<HTMLButtonElement>(".scenario-choice").forEach((choice) => {
     choice.setAttribute("aria-pressed", String(choice.dataset.scenario === scenario));
-    choice.disabled = active || native || status === "paused" || status === "walkthrough" || status === "awaiting-approval";
+    choice.disabled = native || scenarioLocked;
   });
-  button("offline-mode").setAttribute("aria-pressed", String(!native));
-  button("native-mode").setAttribute("aria-pressed", String(native));
-  button("offline-mode").disabled = active && !native;
-  button("native-mode").disabled = active && !native;
-  byId("native-panel").hidden = !native;
-  text("mode-label", native ? nativeId ? `NATIVE COPILOT / ${status === "completed" ? "COMPLETED " : status === "held" ? "HELD " : ""}${nativeMode === "live" ? "LIVE RUN" : "REHEARSAL"}`
-    : "NATIVE COPILOT / WAITING" : "OFFLINE REHEARSAL");
-  text("mode-description", native
-    ? nativeId ? status === "held" ? "SDK host closed without approval. Start a new run to continue."
-      : nativeMode === "live" ? status === "completed"
-      ? "Results of an actual completed model run. No models are currently started by this page."
-      : "Actual Copilot workflow-owned agents. Live model usage." : "Actual Copilot runtime. JavaScript workers; no LLM calls."
-      : "Waiting for a local native run. No models started by this page."
-    : "Real JavaScript workers and checks. No LLM calls.");
-  text("specialist-legend", native && nativeMode === "live" ? "Copilot agents" : "Local workers");
+  text("specialist-legend", native && nativeMode === "live" ? "Copilot agents" : "JavaScript");
   const run = button("run-button");
-  run.textContent = native ? nativeSetupOpen ? "Hide run command" : "Show run command" : active ? "Running…" : canResume ? "Resume saved run"
-    : status === "walkthrough" ? "Read the feature proof"
+  run.textContent = active ? "Running…" : canResume ? "Resume saved run"
+    : status === "walkthrough" ? "Checkpoint reached"
       : status === "awaiting-approval" ? "Review required" : status === "completed" ? "Run again" : "Run rescue";
   run.disabled = !native && (active || status === "walkthrough" || status === "awaiting-approval");
-  run.classList.toggle("primary", !native || nativeId === null);
-  button("walkthrough-toggle").textContent = walkthroughEnabled ? "Feature walkthrough" : "Continuous run";
+  button("walkthrough-toggle").textContent = walkthroughEnabled ? "Step by step" : "Continuous run";
   button("walkthrough-toggle").setAttribute("aria-pressed", String(walkthroughEnabled));
   button("walkthrough-toggle").disabled = active || native || status === "paused" || status === "walkthrough" || status === "awaiting-approval";
   button("pause-button").disabled = !active || native;
   button("reset-button").disabled = active || native;
-  select("pace-select").disabled = active || native;
-  input("seed-input").disabled = active || native || status === "paused" || status === "walkthrough" || status === "awaiting-approval";
   const labels: Record<UiStatus, string> = {
     idle: "Ready", running: "Running", paused: "Paused", "awaiting-approval": "Review checkpoint",
     completed: report?.status === "approved" ? "Draft approved" : "Draft complete",
-    cancelled: native ? "Cancelled" : "On hold", held: "Held / host closed", error: "Held / error", observing: "Watching",
-    walkthrough: "Feature walkthrough paused",
+    cancelled: native ? "Cancelled" : "On hold", held: "On hold", error: "Held / error", observing: "Waiting for run",
+    walkthrough: "Checkpoint",
   };
   text("status-label", labels[status]); byId("status-label").dataset.state = status;
   text("phase-label", phase);
   text("flow-summary", flowSummary());
-  text("cue-text", cues[phase] ?? "“Which failure should we trigger? Show of hands. We won't choose the agents; the evidence will.”");
   byId("twist-banner").hidden = !events.has("twist:twist");
   drawGraph();
   renderFeatureProof();
@@ -675,10 +645,10 @@ function render(): void {
   text("duplicate-count", measured ? measured.duplicateOutcomes.toLocaleString() : "—");
   text("oversold-count", measured ? measured.oversoldSeats.toLocaleString() : "—");
   text("confirmed-count", measured ? measured.uniqueConfirmed.toLocaleString() : "—");
-  text("duplicate-before", before ? `Baseline: ${before.duplicateOutcomes.toLocaleString()}` : "No fixture evaluated yet");
-  text("oversold-before", before ? `Baseline: ${before.oversoldSeats.toLocaleString()}` : "No fixture evaluated yet");
-  text("waitlist-count", measured ? `${measured.waitlisted.toLocaleString()} waitlisted / ${ATTENDEES.toLocaleString()} accounted for` : "No fixture evaluated yet");
-  text("measurement-label", report ? "Verified candidate" : measured && events.has("verification:verification-1") ? "Candidate check" : measured ? "Buggy baseline" : "Waiting for execution");
+  text("duplicate-before", before ? `Baseline: ${before.duplicateOutcomes.toLocaleString()}` : "Not evaluated yet");
+  text("oversold-before", before ? `Baseline: ${before.oversoldSeats.toLocaleString()}` : "Not evaluated yet");
+  text("waitlist-count", measured ? `${measured.waitlisted.toLocaleString()} waitlisted / ${ATTENDEES.toLocaleString()} accounted for` : "Not evaluated yet");
+  text("measurement-label", report ? "Verified candidate · sample data" : measured && events.has("verification:verification-1") ? "Candidate check · sample data" : measured ? "Baseline · sample data" : "2,500 attendees · sample data");
   byId("approval-panel").hidden = report === null;
   button("approve-button").hidden = native || status !== "awaiting-approval";
   button("hold-button").hidden = native || status !== "awaiting-approval";
@@ -696,7 +666,10 @@ function inspectTask(id: string): void {
   const task = taskEvent(id);
   text("inspector-title", task?.title ?? "Not executed yet");
   const evaluation = task?.state === "done" ? evaluationFor(id) : null;
-  const parts = [task ? `${task.state.toUpperCase()} · ${task.kind.toUpperCase()}${task.detail ? ` · ${task.detail}` : ""}`
+  const taskDetail = task?.kind === "worker"
+    ? id === "reviewer" ? "Independent ledger check" : "Evidence-driven repair logic"
+    : task?.detail;
+  const parts = [task ? `${task.state.toUpperCase()} · ${task.kind === "worker" ? "JAVASCRIPT" : task.kind.toUpperCase()}${taskDetail ? ` · ${taskDetail}` : ""}`
     : "This stage is defined by the workflow, but has not executed in this run."];
   if (evaluation) {
     parts.push(`${evaluation.checks.every((check) => check.passed) ? "PASS" : "FAIL"}: ${evaluation.checks.filter((check) => check.passed).length} / 3 checks pass.`);
@@ -719,30 +692,26 @@ function inspectTask(id: string): void {
   text("inspector-detail", parts.join("\n"));
   byId("task-inspector").hidden = false;
 }
-async function pollNative(generation: number): Promise<void> {
-  if (mode !== "native" || generation !== pollGeneration) return;
+async function pollNative(): Promise<void> {
+  if (mode !== "native") return;
   if (location.protocol === "file:") {
-    text("observer-status", "Observer unavailable for file://. Start Launch-Demo.ps1 for native monitoring.");
+    notice("Copilot workflow monitoring requires the local server. Open http://127.0.0.1:4173/?execution=copilot.");
     return;
   }
   const controller = new AbortController();
-  nativeRequest = controller;
   const timeout = setTimeout(() => controller.abort(new Error("Native observer request timed out.")), 5000);
   try {
     const response = await fetch("/api/native/latest", { cache: "no-store", signal: controller.signal });
     if (!response.ok) throw new WorkflowError(`Native observer returned HTTP ${response.status}. Start the bundled local server.`);
     const payload: unknown = await response.json();
-    if (mode !== "native" || generation !== pollGeneration) return;
+    if (mode !== "native") return;
     if (!isRecord(payload) || !Object.hasOwn(payload, "run")) throw new WorkflowError("Native observer response has no run field.");
     if (payload.run === null) {
       resetMemory();
       nativeId = null; nativeRevision = null; nativeObservedAt = 0; nativeRunError = null;
       clearNotice();
-      text("native-command", "node .\\native\\Run-Sdk.mjs --live --pause");
-      button("copy-command").hidden = false;
-      button("copy-command").textContent = "Copy command";
-      text("observer-status", "Connected. Waiting for your native workflow run.");
       status = "observing";
+      phase = "Waiting for workflow";
       render();
       return;
     }
@@ -757,14 +726,12 @@ async function pollNative(generation: number): Promise<void> {
     const revision = JSON.stringify([snapshot.runId, snapshot.updatedAt, snapshot.status, snapshot.error]);
     nativeRunError = snapshot.error;
     if (nativeRunError) notice(nativeRunError); else clearNotice();
-    text("observer-status", `Native run ${snapshot.runId.slice(0, 8)}: ${snapshot.status}, updated ${new Date(snapshot.updatedAt).toLocaleString()}. Usage is shown in Copilot.`);
     if (revision === nativeRevision) return;
     nativeRevision = revision;
     nativeObservedAt = observedAt;
     if (snapshot.runId !== nativeId) { resetMemory(); nativeId = snapshot.runId; }
     nativeMode = snapshot.args.mode;
     walkthroughEnabled = snapshot.args.walkthrough;
-    nativeController = snapshot.controller;
     scenario = snapshot.args.scenario;
     for (const event of snapshot.events) absorb(event);
     phase = snapshot.phase;
@@ -775,54 +742,22 @@ async function pollNative(generation: number): Promise<void> {
       : snapshot.status === "held" ? "held"
       : snapshot.status === "error" || snapshot.status === "halted" ? "error"
       : snapshot.status === "settling" ? "observing" : "paused";
-    const awaitingReview = status === "awaiting-approval" || status === "paused" || status === "walkthrough";
-    text("native-command", awaitingReview
-      ? nativeController === "sdk-terminal" ? status === "walkthrough"
-        ? "Return to the running SDK terminal; type NEXT for the next feature. This is not approval."
-        : "Return to the running SDK terminal; type APPROVE after reviewing the synthetic draft."
-        : `copilot --experimental --model gpt-6.1-sol --reasoning-effort max --resume ${snapshot.sessionId}`
-      : "node .\\native\\Run-Sdk.mjs --live --pause --walkthrough");
-    button("copy-command").hidden = awaitingReview && nativeController === "sdk-terminal";
-    button("copy-command").textContent = awaitingReview ? "Copy resume command" : "Copy command";
     render();
   } catch (error) {
-    if (mode === "native" && generation === pollGeneration) {
-      text("observer-status", "Observer disconnected. No native result has been substituted.");
+    if (mode === "native") {
       notice(error instanceof Error ? error.message : String(error));
     }
   } finally {
     clearTimeout(timeout);
-    if (nativeRequest === controller) nativeRequest = null;
-    if (mode === "native" && generation === pollGeneration) {
-      pollTimer = setTimeout(() => void pollNative(generation), 1500);
+    if (mode === "native") {
+      setTimeout(() => void pollNative(), 1500);
     }
   }
-}
-function switchMode(next: "offline" | "native"): void {
-  if (status === "running" && mode === "offline") return;
-  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
-  pollGeneration++;
-  nativeRequest?.abort();
-  nativeRequest = null;
-  mode = next; clearNotice(); resetMemory(); nativeId = null; nativeRevision = null;
-  nativeObservedAt = 0; nativeRunError = null;
-  nativeSetupOpen = false;
-  if (next === "offline") restore();
-  else { status = "observing"; void pollNative(pollGeneration); }
-  render();
-}
-async function copyCommand(): Promise<void> {
-  try {
-    if (!navigator.clipboard) throw new WorkflowError("Clipboard access is unavailable. Select and copy the visible command manually.");
-    await navigator.clipboard.writeText(byId("native-command").textContent ?? "");
-    button("copy-command").textContent = "Copied";
-    setTimeout(() => { button("copy-command").textContent = "Copy command"; }, 1800);
-  } catch (error) { notice(error instanceof Error ? error.message : String(error)); }
 }
 function downloadEvidence(): void {
   if (!report) { notice("There is no verified report to download yet."); return; }
   const blob = new Blob([JSON.stringify({
-    exportedAt: new Date().toISOString(), engine: mode === "native" ? "copilot-runtime" : "standalone-rehearsal",
+    exportedAt: new Date().toISOString(), engine: mode === "native" ? "copilot-runtime" : "standalone-javascript",
     report, executionEvents: [...events.values()],
   }, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -830,13 +765,6 @@ function downloadEvidence(): void {
   link.href = url; link.download = `launch-rescue-${report.runId}.json`; document.body.append(link); link.click(); link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-function toggleStage(): void {
-  const enabled = document.documentElement.dataset.stage !== "true";
-  document.documentElement.dataset.stage = String(enabled);
-  button("stage-toggle").setAttribute("aria-pressed", String(enabled));
-  render();
-}
-
 document.querySelectorAll<HTMLButtonElement>(".scenario-choice").forEach((choice) => choice.addEventListener("click", () => {
   if (status === "running" || status === "awaiting-approval" || mode === "native") return;
   const value = validateArgs({ scenario: choice.dataset.scenario });
@@ -844,11 +772,7 @@ document.querySelectorAll<HTMLButtonElement>(".scenario-choice").forEach((choice
   render();
 }));
 button("run-button").addEventListener("click", () => {
-  if (mode === "native") {
-    nativeSetupOpen = !nativeSetupOpen;
-    render();
-    if (nativeSetupOpen) byId("native-panel").scrollIntoView({ block: "start" });
-  } else void execute(status === "paused");
+  if (mode === "offline") void execute(status === "paused");
 });
 button("pause-button").addEventListener("click", () => current?.pauseNow());
 button("walkthrough-toggle").addEventListener("click", () => {
@@ -867,7 +791,7 @@ select("proof-step").addEventListener("change", () => {
 button("reset-button").addEventListener("click", () => {
   if (status === "running" || mode === "native") return;
   try { localStorage.removeItem(STORAGE_KEY); journal = null; resetMemory(); clearNotice(); render(); }
-  catch (error) { notice(`Unable to reset this demo's saved state: ${error instanceof Error ? error.message : String(error)}`); }
+  catch (error) { notice(`Unable to reset this workflow's saved state: ${error instanceof Error ? error.message : String(error)}`); }
 });
 button("approve-button").addEventListener("click", () => {
   if (status === "awaiting-approval" && mode === "offline") void execute(true);
@@ -878,14 +802,6 @@ button("hold-button").addEventListener("click", () => {
   render();
 });
 button("download-button").addEventListener("click", downloadEvidence);
-button("offline-mode").addEventListener("click", () => switchMode("offline"));
-button("native-mode").addEventListener("click", () => switchMode("native"));
-button("copy-command").addEventListener("click", () => void copyCommand());
-button("stage-toggle").addEventListener("click", toggleStage);
-button("cue-toggle").addEventListener("click", () => {
-  const panel = byId("presenter-cue"); panel.hidden = !panel.hidden;
-  button("cue-toggle").setAttribute("aria-pressed", String(!panel.hidden));
-});
 button("theme-toggle").addEventListener("click", () => {
   document.documentElement.dataset.theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
 });
@@ -915,9 +831,17 @@ document.addEventListener("keydown", (event) => {
   if (event.key.toLowerCase() === "s" && mode === "offline" && status !== "awaiting-approval" && status !== "walkthrough") {
     event.preventDefault(); void execute(status === "paused");
   } else if (event.key.toLowerCase() === "p") current?.pauseNow();
-  else if (event.key.toLowerCase() === "v") toggleStage();
 });
-text("workflow-source", __WORKFLOW_SOURCE__);
 window.addEventListener("resize", scheduleRender);
-restore();
+const execution = new URLSearchParams(location.search).get("execution");
+if (execution === "copilot") {
+  mode = "native";
+  status = "observing";
+  phase = "Waiting for workflow";
+  void pollNative();
+} else if (execution === null) restore();
+else {
+  status = "error";
+  notice("Unknown workflow view. Open the standard workflow page or use execution=copilot.");
+}
 render();

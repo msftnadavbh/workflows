@@ -11,9 +11,9 @@ Lead with the two visible labels: **Dynamic Workflow = code-controlled orchestra
 ## Before the venue session
 
 1. Keep `Launch-Rescue.pptx`, the PDF, and `Launch-Rescue-Demo.html` on the presentation machine. The five appendix slides are hidden during the main slide show.
-2. Open the standalone HTML once. Use a **1920×1080** projector viewport, **Stage view**, **Feature walkthrough**, **dark theme**, and **Normal** pacing. Test the guided stops, **Continue walkthrough**, and the separate final **Approve local draft** action. Use **New run** to return to a clean state. Smaller viewports require scrolling.
+2. Open the standalone HTML once. Use a **1920×1080** viewport, **Step by step**, and **dark theme**. Test the checkpoints, **Continue**, and the separate final **Approve local draft** action. Use **New run** to return to a clean state. The customer-facing layout adapts automatically; it contains no presenter cues, stage toggle, runtime picker, pacing controls, or command panels.
 3. If demonstrating real agents, run `npm ci` before the event. Check Copilot authentication, preview eligibility, and model availability. Do not depend on venue Wi-Fi for installation.
-4. Start `node demo\server.mjs` in a dedicated terminal and open `http://127.0.0.1:4173/?scoutTheme=dark`. Keep a second terminal ready for the SDK runner.
+4. Start `node demo\server.mjs` in a dedicated terminal. Use `http://127.0.0.1:4173/?scoutTheme=dark&execution=copilot` for the actual Copilot run. The plain URL is the standalone interactive view. Keep a second terminal ready for the SDK runner; setup stays off the customer screen.
 5. Rehearse `node native\Run-Sdk.mjs --rehearsal --pause --walkthrough`. Type `NEXT` at teaching checkpoints; type `APPROVE` only at final draft review. This exercises the actual Copilot runtime without paying for model calls.
 6. If credits and connectivity permit, preflight the live path once. Use the exact requested models: **GPT-6.1 Sol / max** and **Sonnet 5.5 / high**. No Auto substitution is configured.
 
@@ -56,11 +56,11 @@ Use **Both at once** to show independent specialist branches. Use **Surprise me*
 | Review | **AGENTIC WORKFLOW**, independent verdict and rationale | “A different model can reject the explanation even when the numerical checks pass.” |
 | Approval / resume | **DYNAMIC WORKFLOW / HUMAN**, separate approval and saved-step count | “NEXT taught the feature; it did not approve anything. Now a human decides. Resume reuses saved results.” |
 
-Offline: click **Continue walkthrough** at each teaching stop. Native: type **NEXT** in the owning SDK terminal. Native-browser controls are read-only. The offline **JS SUBSTITUTE** label is deliberate; never call it an actual agent result.
+Standalone: click **Continue** at each checkpoint. Native: type **NEXT** in the owning SDK terminal. Native-browser controls are read-only. Standalone repair and review steps are labeled **CODE / REPAIR**, **CODE / REVIEW**, and **JAVASCRIPT**; never call them actual agent results.
 
 | Beat | Action | Say |
 |---|---|---|
-| Establish the mode | Point at the mode strip before starting. | “This is [offline rehearsal / native rehearsal / native live]. Here's exactly what executes.” |
+| Establish execution | Point at the source label on the executed step. | “Code coordinates the process. This step shows exactly what executed.” |
 | Reproduce | Start the chosen incident. Pause if you want to explain the first graph. | “These are measured synthetic outcomes, not an agent guessing the answer.” |
 | Diagnose | Point at the two code probes. | “Independent evidence collection can run in parallel. The findings decide who joins.” |
 | Route | Highlight the specialist node that appears. | “We did not launch every specialist just because we could.” |
@@ -71,9 +71,9 @@ Offline: click **Continue walkthrough** at each teaching stop. Native: type **NE
 | Resume | Offline: approve in the browser. Native SDK: type `APPROVE` in its running terminal. | “The same run continues using saved results. We don't repeat completed model work.” |
 | Evidence | Download the JSON report if useful, then return to slide 15. | “Zero duplicates. Zero oversold seats. Nobody disappears.” |
 
-Keyboard shortcuts for offline rehearsal: **S** run/resume, **P** pause, **V** stage view. They are inactive while editing a field. Presentation pacing deliberately adds delays; do not present it as a latency measurement.
+Keyboard shortcuts for the standalone view: **S** run/resume and **P** pause. They are inactive while editing a field. Local animation timing is not a latency measurement.
 
-The sentence above the graph states the current cause and next step. The feature-proof selector revisits executed proofs; the prompt disclosure shows the exact handoff. Select **Acceptance checks** to show the failed capacity count, and **Re-run acceptance checks** to contrast the passing result. In native mode, **Show run command** restores setup instructions.
+The sentence above the graph states the current cause and next step. **Execution history** revisits completed steps; actual model steps expose the exact prompt. Select **Acceptance checks** to show the failed capacity count, and **Re-run acceptance checks** to contrast the passing result. Setup commands are in this runbook, not in the customer UI.
 
 ## Exact expected outcomes
 
@@ -112,7 +112,7 @@ If asked “what makes this agentic rather than animated?” show the source and
 
 | Symptom | Recovery |
 |---|---|
-| Wi-Fi, sign-in, plan eligibility, or model failure | Switch to **Offline rehearsal**. Say: “Real checks, no LLM calls.” Start a new local run. |
+| Wi-Fi, sign-in, plan eligibility, or model failure | Open the plain URL or standalone HTML and start a new local run. Its JavaScript source labels remain accurate. |
 | Reviewer holds the candidate | Respect the gate. Inspect its rationale; use the offline lesson if time is limited. Never force approval or silently replace the model. |
 | Workflow not found | Check experimental access, the reviewed extension, and SDK dependencies. Use the version-matched SDK runner rather than improvising a client switch. |
 | CLI says unknown `--args` | Check the active version. On this machine, `--no-auto-update` selected an older 1.0.80 runtime. The CLI launcher deliberately omits it. |

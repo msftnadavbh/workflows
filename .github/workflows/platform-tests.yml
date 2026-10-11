@@ -51,6 +51,10 @@ jobs:
       - name: Generate presentation in this isolated CI checkout
         run: npm run deck
       - run: npm run verify:deck
+      - name: Verify native SDK checkpoint and resume with zero model calls
+        run: npm run verify:native
+      - name: Verify the native browser observer with zero model calls
+        run: node scripts/rehearse-native.mjs --walkthrough
       - run: npm run package:stage
       - name: Windows PowerShell launcher contract
         if: runner.os == 'Windows'

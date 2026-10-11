@@ -12,6 +12,7 @@ import { withNativeSession } from "../native/Run-Sdk.mjs";
 import { promptCheckpoint } from "../native/checkpoint.mjs";
 import { nativeBuildFingerprint } from "../native/verification.mjs";
 import { recordRunCost } from "../native/cost.mjs";
+import { browserSettings } from "./browser-runtime.mjs";
 import { readNativeState, reconcileNativeRun } from "../dist/reconcile.mjs";
 import { isWalkthroughCheckpoint } from "../dist/core.mjs";
 
@@ -29,7 +30,8 @@ const address = server.address();
 if (!address || typeof address === "string") throw new Error("The E2E observer did not get a loopback port.");
 let browser;
 try {
-  browser = await chromium.launch({ channel: "msedge", headless: true });
+  const selectedBrowser = browserSettings();
+  browser = await chromium.launch({ ...selectedBrowser.launch, headless: true });
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   const pageErrors = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
@@ -190,7 +192,8 @@ try {
     const evidence = {
       verifiedAt: new Date().toISOString(), mode, nativeBuild, sdkRuntime: runtime,
       browserArtifact: { file: "Launch-Rescue-Demo.html", sha256: browserHash },
-      realBrowser: "Microsoft Edge", viewport: "1920x1080", scenario: "mixed",
+      realBrowser: selectedBrowser.name, browserVersion: browser.version(),
+      platform: process.platform, architecture: process.arch, viewport: "1920x1080", scenario: "mixed",
       runId: completed.runId, checkpointStatus: paused.status, finalStatus: completed.status,
       browserExportedCurrentRun: exported.report.runId === completed.runId,
       browserApprovalUnavailable: true, inspectorExplainsFailure: true,

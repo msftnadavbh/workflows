@@ -1,0 +1,56 @@
+name: Platform tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic:
+    name: ${{ matrix.platform }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win32
+            arch: x64
+          - os: macos-15
+            platform: darwin
+            arch: arm64
+          - os: macos-15-intel
+            platform: darwin
+            arch: x64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          architecture: ${{ matrix.arch }}
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: ${{ matrix.arch }}
+      - run: npm ci
+      - name: Assert actual runner and SDK architecture
+        run: npm run check:platform -- --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+      - name: Provision the selected Mac browser
+        if: runner.os == 'macOS'
+        run: npx playwright install chromium
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:browser
+      - run: npm run verify:deck
+      - run: npm run package:stage
+      - name: Windows PowerShell launcher contract
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tests/launcher.test.ps1

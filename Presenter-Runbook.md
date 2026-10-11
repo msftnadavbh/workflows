@@ -13,11 +13,21 @@ Lead with the two visible labels: **Dynamic Workflow = code-controlled orchestra
 1. Keep `Launch-Rescue.pptx`, the PDF, and `Launch-Rescue-Demo.html` on the presentation machine. The five appendix slides are hidden during the main slide show.
 2. Open the standalone HTML once. Use a **1920×1080** viewport, **Step by step**, and **dark theme**. Test the checkpoints, **Continue**, and the separate final **Approve local draft** action. Use **New run** to return to a clean state. The customer-facing layout adapts automatically; it contains no presenter cues, stage toggle, runtime picker, pacing controls, or command panels.
 3. If demonstrating real agents, run `npm ci` before the event. Check Copilot authentication, preview eligibility, and model availability. Do not depend on venue Wi-Fi for installation.
-4. Start `node demo\server.mjs` in a dedicated terminal. Use `http://127.0.0.1:4173/?scoutTheme=dark&execution=copilot` for the actual Copilot run. The plain URL is the standalone interactive view. Keep a second terminal ready for the SDK runner; setup stays off the customer screen.
-5. Rehearse `node native\Run-Sdk.mjs --rehearsal --pause --walkthrough`. Type `NEXT` at teaching checkpoints; type `APPROVE` only at final draft review. This exercises the actual Copilot runtime without paying for model calls.
+4. Start `npm run launch -- --no-browser` in a dedicated terminal on Windows or macOS. Use `http://127.0.0.1:4173/?scoutTheme=dark&execution=copilot` for the actual Copilot run. With a custom `--port`, use the printed URL and append `&execution=copilot`. The plain URL is the standalone interactive view. Keep a second terminal ready for the SDK runner; setup stays off the customer screen.
+5. Rehearse `npm run native -- --rehearsal --pause --walkthrough`. Type `NEXT` at teaching checkpoints; type `APPROVE` only at final draft review. This exercises the actual Copilot runtime without paying for model calls.
 6. If credits and connectivity permit, preflight the live path once. Use the exact requested models: **GPT-6.1 Sol / max** and **Sonnet 5.5 / high**. No Auto substitution is configured.
 
 Do not open account details, tokens, environment dumps, or unrelated sessions on the projector. The demo uses only synthetic evidence.
+
+### Mac preflight
+
+Use native **Node 22.12+ arm64** on Apple Silicon or **x64** on Intel, plus **Python 3** available as `python3`. Windows uses `python`. The pinned SDK chooses its matching Darwin package; no separate workflow is installed.
+
+For browser automation on a Mac, run `npx playwright install chromium` explicitly. Windows tests retain Edge. Run `npm run check:platform -- --platform darwin --arch arm64` (or `x64`) to catch an unexpected architecture or Rosetta session. This is an architecture/package check, not a successful native workflow test.
+
+Real Mac arm64/x64 native checkpoint and resume behavior must be rehearsed on authenticated, preview-eligible hardware before presenting it as verified. That hardware is not available in the current Windows session. Existing native proofs describe Windows runs only.
+
+The supplied PPTX and PDF can be presented on a Mac. **PowerPoint COM rendering/export remains Windows-only**; do not attempt `scripts/render-slides.py` on macOS. Coordinate one final presentation, screenshot, proof, and ZIP refresh with its owner. Live verification needs separate AI-credit approval.
 
 ## Talk map
 
@@ -91,7 +101,7 @@ Why the surprise baseline shows 500, not 200: retries initially produce 3,000 al
 ## The real native command
 
 ```powershell
-node native\Run-Sdk.mjs --live --pause --walkthrough --scenario mixed
+npm run native -- --live --pause --walkthrough --scenario mixed
 ```
 
 The runner uses SDK 1.0.19 and its runtime 1.0.95. Its extension launch provider is restricted to this project's exact entrypoint. The two agents have no tools, and the extension verifies their actual resolved models before accepting results.
@@ -118,8 +128,10 @@ If asked “what makes this agentic rather than animated?” show the source and
 | CLI says unknown `--args` | Check the active version. On this machine, `--no-auto-update` selected an older 1.0.80 runtime. The CLI launcher deliberately omits it. |
 | Native checkpoint seems stuck | Read the prompt in the owning SDK terminal: use `NEXT` for a teaching stop, `APPROVE` only for final draft review. |
 | Native view says held / host closed | The SDK terminal has ended. Start a new run; a completed draft-only run has no approval gate to resume. |
-| Port 4173 is occupied | Use another port. Do not terminate other users' processes by name. |
-| PowerShell policy blocks the launcher | Use `node demo\server.mjs`; do not weaken system settings. |
+| Port 4173 is occupied | Use `npm run launch -- --port 4180 --no-browser`. The launcher refuses foreign servers and never stops them. |
+| PowerShell policy blocks the launcher | Use `npm run launch`; do not weaken system settings. |
+| Mac browser automation cannot find Chromium | Run `npx playwright install chromium`; do not silently switch to Safari, Chrome, or Edge. |
+| Python is missing | Install Python 3 and ensure `python` on Windows or `python3` on macOS is on PATH. |
 | Need to recover offline after reload | The browser restores the same local journal. Resume it or choose **New run**. |
 
 ## Claims to avoid

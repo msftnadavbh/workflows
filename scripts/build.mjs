@@ -16,28 +16,33 @@ async function main() {
   await mkdir(join(root, ".github", "extensions", "launch-rescue"), { recursive: true });
   await Promise.all([
     build({
+      absWorkingDir: root,
       entryPoints: [join(root, "demo", "core.ts"), join(root, "demo", "local-context.ts")],
       outdir: join(root, "dist"), bundle: true, platform: "neutral", format: "esm", target: "es2022",
       outExtension: { ".js": ".mjs" }, logLevel: "warning",
     }),
     build({
+      absWorkingDir: root,
       entryPoints: [join(root, "native", "extension.ts")],
       outfile: join(root, ".github", "extensions", "launch-rescue", "extension.mjs"),
       bundle: true, platform: "node", format: "esm", target: "node22",
       external: ["@github/copilot-sdk/extension"], logLevel: "warning",
     }),
     build({
+      absWorkingDir: root,
       entryPoints: [join(root, "native", "io.ts")],
       outfile: join(root, "dist", "io.mjs"),
       bundle: true, platform: "node", format: "esm", target: "node22", logLevel: "warning",
     }),
     build({
+      absWorkingDir: root,
       entryPoints: [join(root, "native", "reconcile.ts")],
       outfile: join(root, "dist", "reconcile.mjs"),
       bundle: true, platform: "node", format: "esm", target: "node22", logLevel: "warning",
     }),
   ]);
   const browser = await build({
+    absWorkingDir: root,
     entryPoints: [join(root, "demo", "browser.ts")],
     bundle: true, platform: "browser", format: "iife", target: "es2022",
     write: false, minify: false, logLevel: "warning",

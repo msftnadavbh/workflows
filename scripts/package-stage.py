@@ -31,6 +31,11 @@ def require(condition, message):
     if not condition:
         raise RuntimeError(message)
 
+
+def artifact_path(root, identifier):
+    return root.joinpath(*identifier.split("\\"))
+
+
 def verify_native_build(proof, label):
     build = proof.get("nativeBuild")
     require(isinstance(build, dict) and build.get("algorithm") == "sha256",
@@ -39,7 +44,7 @@ def verify_native_build(proof, label):
     require(isinstance(files, dict) and set(files) == set(NATIVE_VERIFICATION_FILES),
             f"{label} proof has an incomplete build fingerprint.")
     for filename in NATIVE_VERIFICATION_FILES:
-        actual = hashlib.sha256((ROOT / filename).read_bytes()).hexdigest()
+        actual = hashlib.sha256(artifact_path(ROOT, filename).read_bytes()).hexdigest()
         require(files[filename] == actual,
                 f"{label} proof is stale for {filename}. Rebuild and re-run native verification.")
 
@@ -47,11 +52,11 @@ def verify_native_build(proof, label):
 def main():
     version = re.search(
         r'export const VERSION = "([^"]+)"',
-        (ROOT / r"demo\core.ts").read_text(encoding="utf-8"),
+        artifact_path(ROOT, r"demo\core.ts").read_text(encoding="utf-8"),
     ).group(1)
-    live = json.loads((ROOT / r"evidence\native-live-proof.json").read_text(encoding="utf-8"))
-    runtime = json.loads((ROOT / r"evidence\native-runtime-proof.json").read_text(encoding="utf-8"))
-    research = json.loads((ROOT / r"sources\research.json").read_text(encoding="utf-8"))
+    live = json.loads(artifact_path(ROOT, r"evidence\native-live-proof.json").read_text(encoding="utf-8"))
+    runtime = json.loads(artifact_path(ROOT, r"evidence\native-runtime-proof.json").read_text(encoding="utf-8"))
+    research = json.loads(artifact_path(ROOT, r"sources\research.json").read_text(encoding="utf-8"))
     require(live["status"] == "completed", "Actual live native verification is incomplete.")
     require(live["report"]["version"] == version, "Live proof belongs to an older workflow.")
     require(live["report"]["scenario"] == "mixed", "The actual adaptive scenario must be verified.")
@@ -71,9 +76,9 @@ def main():
         require(len([name for name in deck.namelist()
                      if re.fullmatch(r"ppt/slides/slide\d+\.xml", name)]) == 26, "PowerPoint must contain 26 slides.")
 
-    paths = [ROOT / name for name in FILES + EXTRA]
+    paths = [artifact_path(ROOT, name) for name in FILES + EXTRA]
     for folder in FOLDERS:
-        paths.extend(path for path in (ROOT / folder).rglob("*")
+        paths.extend(path for path in artifact_path(ROOT, folder).rglob("*")
                      if path.is_file() and "__pycache__" not in path.parts and path.suffix not in {".pyc", ".tmp"})
     paths = sorted(set(paths), key=lambda path: str(path.relative_to(ROOT)))
     require(all(path.is_file() for path in paths), "A required stage file is missing.")
@@ -103,7 +108,7 @@ def main():
             names = set(output.namelist())
             require(".github/extensions/launch-rescue/extension.mjs" in names, "Native extension missing from ZIP.")
             require("Launch-Rescue-Demo.html" in names, "Standalone fallback missing from ZIP.")
-            require(not any(name.startswith(("runs/", "node_modules/")) for name in names),
+            require(not any(name.startswith(("runs/", "node_modules/", "session-state/", "installed-plugins/")) for name in names),
                     "Private or temporary state leaked into ZIP.")
             require(not any(name.startswith(".impeccable/") and name != ".impeccable/design-system.json"
                             for name in names), "Private design-session cache leaked into ZIP.")

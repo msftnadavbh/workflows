@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { runLaunchRescue, validateArgs } from "../dist/core.mjs";
 import { LocalContext, newJournal } from "../dist/local-context.mjs";
@@ -462,11 +462,13 @@ for (const viewport of [{ width: 1366, height: 768 }, { width: 960, height: 540 
   });
 }
 
-test("capture desktop and mobile evidence without page-level overflow", async ({ page, browser }) => {
-  await mkdir("presentation\\assets", { recursive: true });
+test("capture desktop and mobile evidence without page-level overflow", async ({ page, browser, baseURL }, testInfo) => {
+  const assets = process.env.LAUNCH_RESCUE_CAPTURE_ARTIFACTS === "1"
+    ? join("presentation", "assets") : testInfo.outputPath("screenshots");
+  await mkdir(assets, { recursive: true });
   await page.setViewportSize({ width: 1920, height: 1080 });
   await begin(page, "mixed");
-  await page.screenshot({ path: "presentation\\assets\\demo-desktop.png", fullPage: true });
+  await page.screenshot({ path: join(assets, "demo-desktop.png"), fullPage: true });
   const desktopFitsWidth = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
   const desktopHeight = await page.evaluate(() => document.documentElement.scrollHeight);
   const rectangle = await page.locator("#workflow-graph").boundingBox();
@@ -483,20 +485,20 @@ test("capture desktop and mobile evidence without page-level overflow", async ({
     }
     return clipped;
   });
-  await page.screenshot({ path: "presentation\\assets\\demo-trace.png",
+  await page.screenshot({ path: join(assets, "demo-trace.png"),
     clip: { x: rectangle.x + 260 * scale, y: rectangle.y + 32 * scale, width: 760 * scale, height: 312 * scale } });
   await page.locator("#workflow-graph path").evaluateAll((paths, clipped) => {
     clipped.forEach((index) => { paths[index].style.visibility = ""; });
   }, clippedPaths);
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
-  await mobile.goto("http://127.0.0.1:4173/?scoutTheme=light");
+  await mobile.goto(new URL("/?scoutTheme=light", baseURL).href);
   await mobile.getByRole("button", { name: "Step by step", exact: true }).click();
   await mobile.getByRole("button", { name: "Room switch", exact: true }).click();
   await mobile.getByRole("button", { name: "Run rescue", exact: true }).click();
   await expect(mobile.locator("#status-label")).toHaveText("Review checkpoint");
   await expectCustomerView(mobile);
   expect(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await mobile.screenshot({ path: "presentation\\assets\\demo-mobile.png", fullPage: true });
+  await mobile.screenshot({ path: join(assets, "demo-mobile.png"), fullPage: true });
   await mobile.close();
   expect(desktopFitsWidth).toBe(true);
   expect(desktopHeight).toBeLessThanOrEqual(1080);

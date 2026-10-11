@@ -6,7 +6,7 @@ instructions: |
   Keep model selection explicit: GPT-6.1 Sol max, Sonnet 5.5 high.
 scripts:
   - name: Start Launch Rescue
-    command: node demo/server.mjs
+    command: npm run launch -- --no-browser
   - name: Verify demo
     command: npm test
 server_ready_pattern: 'Local:\s+(http://127\.0\.0\.1:\d+)'

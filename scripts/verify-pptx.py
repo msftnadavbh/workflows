@@ -74,7 +74,7 @@ def main():
         media = [name for name in names if name.startswith("ppt/media/")]
         if not media:
             problems.append("No embedded demo screenshot")
-    manifest = json.loads(Path(r"presentation\slide-manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads((Path("presentation") / "slide-manifest.json").read_text(encoding="utf-8"))
     for slide in manifest:
         for item in slide["objects"]:
             if item["x"] < 0 or item["y"] < 0 or item["x"] + item["w"] > 13.36 or item["y"] + item["h"] > 7.52:

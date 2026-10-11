@@ -8,15 +8,18 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "start": "node demo/server.mjs",
-    "test": "npm run build && node --test tests\\core.test.mjs tests\\workflow.test.mjs tests\\server.test.mjs tests\\native-io.test.mjs tests\\checkpoint.test.mjs tests\\cost.test.mjs && python tests\\package-stage.test.py",
+    "launch": "node scripts/launch.mjs",
+    "native": "node native/Run-Sdk.mjs",
+    "check:platform": "node scripts/check-platform.mjs",
+    "test": "npm run build && node --test tests/core.test.mjs tests/workflow.test.mjs tests/server.test.mjs tests/native-io.test.mjs tests/checkpoint.test.mjs tests/cost.test.mjs tests/launcher.test.mjs tests/portability.test.mjs && node scripts/run-python.mjs tests/package-stage.test.py",
     "typecheck": "tsc --noEmit",
     "test:browser": "playwright test",
-    "test:native-e2e": "node scripts\\rehearse-native.mjs --live --walkthrough",
+    "test:native-e2e": "node scripts/rehearse-native.mjs --live --walkthrough",
     "deck": "node presentation/build-deck.mjs",
-    "verify:deck": "python scripts/verify-pptx.py Launch-Rescue.pptx",
-    "package:stage": "python scripts\\package-stage.py",
-    "verify:native": "node native\\verify-runtime.mjs",
-    "verify:live": "node native\\verify-live.mjs"
+    "verify:deck": "node scripts/run-python.mjs scripts/verify-pptx.py Launch-Rescue.pptx",
+    "package:stage": "node scripts/run-python.mjs scripts/package-stage.py",
+    "verify:native": "node native/verify-runtime.mjs",
+    "verify:live": "node native/verify-live.mjs"
   },
   "devDependencies": {
     "@github/copilot-sdk": "1.0.19",

@@ -33,6 +33,8 @@ git clone https://github.com/msftnadavbh/workflows.git
 Set-Location workflows
 ```
 
+On macOS, use `cd workflows` instead of `Set-Location`. The standalone HTML requires only a modern browser on either Apple Silicon or Intel; it does not require Node or a Copilot account.
+
 Leave **Step by step** enabled, choose **Surprise me**, and click **Run rescue**. The workflow pauses at each decision boundary. Inspect the execution code, input, and output; click **Continue** to advance. Final draft approval is a separate action.
 
 For an uninterrupted run, toggle **Step by step** to **Continuous run**. The same execution panel still shows the decisions.
@@ -45,17 +47,17 @@ The customer-facing interface contains no runtime picker, rehearsal banner, pres
 
 Requires **Node.js 22.12+**, a signed-in eligible Copilot account, dynamic-workflow preview access, and access to the configured models.
 
-In the repository folder, start the observer:
+In the repository folder, these commands work in Windows PowerShell and macOS Terminal:
 
 ```powershell
 npm ci
-node demo\server.mjs
+npm run launch -- --no-browser
 ```
 
 Open **http://127.0.0.1:4173/?scoutTheme=dark&execution=copilot**. This is the customer-facing view of the Copilot run; setup and authorization remain outside the browser. In a second terminal, from the same folder:
 
 ```powershell
-node native\Run-Sdk.mjs --live --pause --walkthrough --scenario mixed
+npm run native -- --live --pause --walkthrough --scenario mixed
 ```
 
 **Used here:** the actual **Copilot dynamic-workflow runtime** plus **agentic model reasoning**. The browser observes execution; it does not start the agents or authorize native work.
@@ -65,9 +67,29 @@ node native\Run-Sdk.mjs --live --pause --walkthrough --scenario mixed
 
 To exercise the actual workflow runtime **without model calls**, replace `--live` with `--rehearsal`. Omit `--pause` for a draft-only run; no human approval is then requested or claimed.
 
+### Windows and macOS prerequisites
+
+Use **Node.js 22.12+** built for your machine's architecture: **arm64** on Apple Silicon and **x64** on Intel. Avoid running an arm64 Mac's terminal or Node under Rosetta when checking the arm64 target. The unchanged SDK **1.0.19** selects its matching runtime package automatically; there is no separate Mac workflow, installer, or app bundle.
+
+Development and stage packaging also require **Python 3**. The npm commands invoke `python` on Windows and `python3` on macOS, inherit terminal I/O, and preserve exit codes. A missing interpreter is an explicit error, not a fallback.
+
+Browser automation uses **installed Microsoft Edge on Windows** and **Playwright Chromium on macOS**. Provision Chromium explicitly on a Mac:
+
+```sh
+npm ci
+npx playwright install chromium
+npm run check:platform -- --platform darwin --arch arm64
+```
+
+On Intel, replace `arm64` with `x64`. These checks identify the actual Node architecture and selected SDK package, and start its pinned runtime without creating a session or model call. They do not authenticate Copilot or claim a native checkpoint/resume run passed.
+
+Native rehearsal/live runs still require an authenticated, preview-eligible Copilot account. Keep the owning SDK terminal open, use **NEXT** at teaching checkpoints, and **APPROVE** only at the separate final gate. HOLD, EOF, and interruption never approve. The browser is read-only.
+
+**Verification status:** Windows x64 is the available local test platform. macOS 15 arm64 and macOS 15 Intel x64 are the explicit CI targets, but real Mac native checkpoint/resume verification is pending authenticated hardware. Existing native proofs are Windows observations, not Mac certification. Do not treat the SDK's Darwin packages or simulated-platform unit tests as proof of actual Mac execution.
+
 ### See what each run cost
 
-Native runs report usage from the Copilot runtime in the terminal and save it to `runs\RUN_ID\cost.json`. In `--pause` runs the table also appears before the final approval checkpoint, not at every teaching stop. The customer-facing browser remains unchanged.
+Native runs report usage from the Copilot runtime in the terminal and save it to `runs/RUN_ID/cost.json`. In `--pause` runs the table also appears before the final approval checkpoint, not at every teaching stop. The customer-facing browser remains unchanged.
 
 ```text
 Cost of this run (measured by the Copilot runtime)
@@ -188,7 +210,13 @@ Designed for a **2,500-person audience**, with an approximately 25-minute talk a
 
 Use a **1920x1080** viewport. The customer layout keeps the feature definitions visible and places the graph beside its execution details without a stage toggle. During checkpoints, the decision is the focus; measured outcomes return for final review. Runtime setup is documented here and in the runbook, not displayed to customers. Smaller screens remain operable by scrolling.
 
-The Windows launcher, `.\Launch-Demo.ps1`, opens the browser only after verifying its own server is ready. Use `-Port 4180` if the default port is occupied, or `-NoBrowser` to start just the local observer.
+The shared launcher is **`npm run launch`**. It starts a local observer on **4173**, checks that `/health` belongs to the child it started, and only then opens the default browser. It refuses a foreign server and stops only its own child on interruption.
+
+```sh
+npm run launch -- --port 4180 --no-browser
+```
+
+Use the printed URL for a custom port; append `&execution=copilot` to observe native runs. The Windows-only `.\Launch-Demo.ps1 -Port 4180 -NoBrowser` remains compatible and retains its existing readiness and cleanup behavior.
 
 ## Explore the implementation
 
@@ -197,22 +225,26 @@ The Windows launcher, `.\Launch-Demo.ps1`, opens the browser only after verifyin
 | [`demo/core.ts`](./demo/core.ts) | Shared scenario logic, evidence routing, bounded repairs, immutable snapshots, and checks. |
 | [`native/extension.ts`](./native/extension.ts) | Registers the actual Copilot dynamic workflow and verifies model resolution. |
 | [`native/Run-Sdk.mjs`](./native/Run-Sdk.mjs) | Hosts the pinned runtime, loads scoped agents, and owns the terminal checkpoint. |
-| [`native/cost.mjs`](./native/cost.mjs) | Reads runtime usage after each run and writes the per-model cost table to `runs\RUN_ID\cost.json`. |
+| [`native/cost.mjs`](./native/cost.mjs) | Reads runtime usage after each run and writes the per-model cost table to `runs/RUN_ID/cost.json`. |
 | [`demo/browser.ts`](./demo/browser.ts) | Runs offline rehearsal and observes native progress without authorizing it. |
 | [`native/reconcile.ts`](./native/reconcile.ts) | Combines progress and lifecycle records without letting stale writes undo HOLD or resumed work. |
+| [`scripts/launch.mjs`](./scripts/launch.mjs) | Shared Windows/macOS launcher with owned-child readiness, default-browser opening, and interruption cleanup. |
+| [`scripts/browser-runtime.mjs`](./scripts/browser-runtime.mjs) | Shared explicit browser selection; no fallback after a browser launch failure. |
 | [`tests`](./tests) | Regression coverage for calculations, branches, recovery, polling, packaging, and launchers. |
 | [`.github/github-app.yml`](./.github/github-app.yml) | Copilot app project instructions and manual demo/test scripts; not a scheduled workflow. |
+| [`.github/workflows/platform-tests.yml`](./.github/workflows/platform-tests.yml) | Deterministic Windows x64 and Mac arm64/x64 checks; no Copilot credentials or model calls. |
 
 The compiled extension is included at [`.github/extensions/launch-rescue/extension.mjs`](./.github/extensions/launch-rescue/extension.mjs). The Windows CLI alternative is documented in the [runbook](./Presenter-Runbook.md); prefer the SDK path for the live checkpoint.
 
 ## Development and verification
 
-Install dependencies with `npm ci`. Local regression tests also require **Python**; browser tests use an installed **Microsoft Edge**.
+Install dependencies with `npm ci`. Local regression tests require Python; provision the platform's browser as described above.
 
 | Command | Coverage | Makes model calls? |
 |---|---|---|
 | `npm run build` | Rebuilds the standalone HTML and native extension. | No |
 | `npm run typecheck` | Strict TypeScript checks against the actual SDK types. | No |
+| `npm run check:platform -- --platform darwin --arch arm64` | Asserts actual runner architecture and matching SDK package; use `x64` on Intel and `win32` on Windows. | No |
 | `npm test` | Calculations, routing, recovery, lifecycle races, terminal input, server, and package regressions. | No |
 | `npm run test:browser` | Scenario completion, normal-speed narration, keyboard use, reload, native observer states, and stage fit. | No |
 | `npm run verify:native` | Actual native-runtime checkpoint and same-run resume. Requires eligible authentication. | No |
@@ -224,16 +256,18 @@ Install dependencies with `npm ci`. Local regression tests also require **Python
 For browser-observed native E2E without model calls:
 
 ```powershell
-node scripts\rehearse-native.mjs
+node scripts/rehearse-native.mjs --walkthrough
 ```
 
-To rebuild the presentation, run `npm run deck`. Optional slide rendering uses installed PowerPoint, `pythoncom`, `win32com`, and Pillow:
+To rebuild the presentation, run `npm run deck`. **Optional PowerPoint COM rendering and PDF export are Windows-only**, requiring installed PowerPoint, `pythoncom`, `win32com`, and Pillow. They are not part of Mac tests or prerequisites:
 
 ```powershell
-python scripts\render-slides.py Launch-Rescue.pptx
+node scripts/run-python.mjs scripts/render-slides.py Launch-Rescue.pptx
 ```
 
 Actual execution evidence is included in [`evidence/native-live-proof.json`](./evidence/native-live-proof.json), [`evidence/native-runtime-proof.json`](./evidence/native-runtime-proof.json), and [`evidence/browser-native-live-e2e.json`](./evidence/browser-native-live-e2e.json). Proofs identify the tested build with SHA-256 fingerprints; packaging rejects stale proofs and excludes private session caches.
+
+Browser tests write screenshots into their test-output directory by default. Set `LAUNCH_RESCUE_CAPTURE_ARTIFACTS=1` only for the coordinated final screenshot capture. When multiple sessions are working, designate one owner for presentation generation, native proofs, screenshots, and the stage ZIP; do not run paid live verification without separate approval. The presentation-source command update and final artifact refresh remain with that coordinated owner.
 
 ## Safety and limitations
 

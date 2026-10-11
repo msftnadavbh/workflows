@@ -4,9 +4,15 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { runLaunchRescue, validateArgs } from "../dist/core.mjs";
 import { LocalContext, newJournal } from "../dist/local-context.mjs";
+import { browserSettings } from "../scripts/browser-runtime.mjs";
 
 const customerUrl = "/?scoutTheme=dark";
 const copilotUrl = "/?scoutTheme=dark&execution=copilot";
+
+test.beforeAll(async ({ browser }) => {
+  expect(browser.browserType().name()).toBe("chromium");
+  console.log(`Browser used: ${browserSettings().name} ${browser.version()} on ${process.platform}/${process.arch}.`);
+});
 
 async function expectCustomerView(page) {
   expect(await page.locator("body").innerText()).not.toMatch(
@@ -186,6 +192,18 @@ test("the portable HTML executes offline directly from file:// and preserves its
   await expect(page.locator("#status-label")).toHaveText("Review checkpoint");
   await page.getByRole("button", { name: "Approve local draft", exact: true }).click();
   await expect(page.locator("#status-label")).toHaveText("Draft approved");
+  expect(requests).toEqual([]);
+});
+
+test("file-based Copilot observation names the portable launcher and never substitutes local work", async ({ page }) => {
+  const requests = [];
+  page.on("request", (request) => { if (/^https?:/.test(request.url())) requests.push(request.url()); });
+  await page.goto(`${pathToFileURL(resolve("Launch-Rescue-Demo.html")).href}?execution=copilot`);
+  await expect(page.getByRole("alert")).toContainText("npm run launch -- --no-browser");
+  await expect(page.getByRole("alert")).toContainText("printed URL with &execution=copilot");
+  await expect(page.locator("#checks-total")).toHaveText("0 / 3 run");
+  await expect(page.locator("#mission-controls")).toBeHidden();
+  await expect(page.locator("#copy-command, #native-command")).toHaveCount(0);
   expect(requests).toEqual([]);
 });
 

@@ -695,7 +695,7 @@ function inspectTask(id: string): void {
 async function pollNative(): Promise<void> {
   if (mode !== "native") return;
   if (location.protocol === "file:") {
-    notice("Copilot workflow monitoring requires the local server. Open http://127.0.0.1:4173/?execution=copilot.");
+    notice("Copilot workflow monitoring requires the local server. Run npm run launch -- --no-browser, then open the printed URL with &execution=copilot.");
     return;
   }
   const controller = new AbortController();
